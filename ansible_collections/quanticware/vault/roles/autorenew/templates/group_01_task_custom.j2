@@ -1,0 +1,8 @@
+        template {
+          change_mode = "noop"
+          destination = "secrets/playbook.yml"
+          perms = "644"
+          data = <<EOH
+{{ lookup('template', 'playbook.yml.j2') }}
+EOH
+        }

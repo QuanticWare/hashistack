@@ -1,0 +1,23 @@
+- name: "Nomad | Consul ACL | Reload local facts"
+  ansible.builtin.setup:
+    filter: ansible_local
+
+- name: "Nomad | Consul ACL | Create Consul policy for Vault"
+  ansible.builtin.import_role:
+    name: "quanticware.consul.operate"
+    tasks_from: create_policy
+  vars:
+    consul_policy_name: nomad-service
+    consul_policy_rules: 'agent_prefix \"\" {\n policy = \"read\"\n }\n \n acl = \"write\"\n \n key_prefix \"\" {\n policy = \"read\"\n }\n \n node_prefix \"\" {\n policy = \"read\"\n }\n \n service_prefix \"\" {\n policy = \"write\"\n }\n'
+
+- name: "Nomad | Consul Token | Create Consul token for Vault"
+  ansible.builtin.import_role:
+    name: "quanticware.consul.operate"
+    tasks_from: create_token
+  vars:
+    consul_token_name: "nomad"
+    consul_policy_name: "nomad-service"
+
+- name: "Nomad | Consul ACL | Reload local facts"
+  ansible.builtin.setup:
+    filter: ansible_local

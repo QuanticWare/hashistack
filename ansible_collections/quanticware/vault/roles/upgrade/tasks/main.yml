@@ -1,0 +1,51 @@
+---
+# tasks file for upgrade
+
+- name: Check vault latest version online
+  block:
+    - name: Vault | Retrieve brut list from hashicorp.com
+      uri:
+        url: "https://releases.hashicorp.com/vault/"
+        return_content: yes
+      register: vault_brut_list
+
+    - name: Vault | Extract version number
+      set_fact:
+        vault_version: '{{ vault_brut_list.content | regex_search("vault_[\d.]{3,}<") | regex_replace("<","") | regex_search("\d.*") }}'
+  when: check_online_version == True
+
+- name: Check Vault installed version
+  ansible.builtin.command: vault version
+  register: vault_installed_version
+
+- name: Vault upgrade process
+  block:
+    - name: Download and extract new version for ARM64
+      ansible.builtin.unarchive:
+        src: "https://releases.hashicorp.com/vault/{{ vault_version }}/vault_{{ vault_version }}_linux_arm64.zip"
+        dest: "{{ vault_path }}"
+        remote_src: yes
+      when: ansible_architecture == "aarch64"
+
+    - name: Download and extract new version for ARM
+      ansible.builtin.unarchive:
+        src: "https://releases.hashicorp.com/vault/{{ vault_version }}/vault_{{ vault_version }}_linux_arm.zip"
+        dest: "{{ vault_path }}"
+        remote_src: yes
+      when: ansible_architecture == "armv7l"
+
+    - name: Download and extract new version for x64
+      ansible.builtin.unarchive:
+        src: "https://releases.hashicorp.com/vault/{{ vault_version }}/vault_{{ vault_version }}_linux_amd64.zip"
+        dest: "{{ vault_path }}"
+        remote_src: yes
+      when: ansible_architecture == "x86_64"
+
+    - name: Restart Vault
+      systemd:
+        name: vault
+        state: restarted
+
+    - name: Unseal Vault after upgrade
+      ansible.builtin.shell: "/usr/local/bin/ansible-playbook -i localhost, /root/vault_unseal.yml"
+  when: vault_version is not in vault_installed_version.stdout

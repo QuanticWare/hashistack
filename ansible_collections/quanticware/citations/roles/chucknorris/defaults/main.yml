@@ -1,0 +1,7 @@
+---
+# defaults file for citations
+app_name: citations
+role_user: root
+
+philosopher: "Chuck Norris"
+language: "fr"

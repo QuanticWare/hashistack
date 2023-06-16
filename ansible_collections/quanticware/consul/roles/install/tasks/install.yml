@@ -1,0 +1,111 @@
+- name: "Consul Install | Install binary"
+  ansible.builtin.apt:
+    name: consul
+    update_cache: yes
+
+- name: "Consul Install | Prevent Consul from being upgraded"
+  ansible.builtin.dpkg_selections:
+    name: consul
+    selection: hold
+
+- name: "Consul Install | Block Gossip Encryption Key"
+  block:
+  - name: "Consul Install | Generate Gossip Encryption Key"
+    ansible.builtin.command: "openssl rand -base64 32"
+    register: consul_encrypt_key_out
+
+  - ansible.builtin.set_fact:
+      consul_encrypt_key: "{{ consul_encrypt_key_out.stdout }}"
+
+  - ansible.builtin.set_fact:
+      consul_encrypt_key_facts: |
+        {
+          "consul_encrypt_key": "{{ consul_encrypt_key_out.stdout }}"
+        }
+
+  - name: "Consul Install | Insert Consul encryption key in ansible local facts"
+    ansible.builtin.copy:
+      dest: /etc/ansible/facts.d/consul_encrypt_key.fact
+      content: "{{ consul_encrypt_key_facts | to_nice_json }}"
+      mode: "0600"
+  when: ansible_local.consul_encrypt_key.consul_encrypt_key is not defined
+
+- name: "Consul Install | Block ACL master token"
+  block:
+  - name: "Consul Install | Save ACL master token"
+    ansible.builtin.set_fact:
+      consul_acl_master_token: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters') | to_uuid }}"
+
+  - ansible.builtin.set_fact:
+      consul_acl_master_token_facts: |
+        {
+          "consul_acl_master_token": "{{ consul_acl_master_token }}"
+        }
+
+  - name: "Consul Install | Insert Consul encryption key in ansible local facts"
+    ansible.builtin.copy:
+      dest: /etc/ansible/facts.d/consul_acl_master_token.fact
+      content: "{{ consul_acl_master_token_facts | to_nice_json }}"
+      mode: "0600"
+
+  - name: "Consul Install | Insert Consul ACL master token"
+    ansible.builtin.blockinfile:
+      path: "{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/hashistack.yml"
+      marker: "#<!-- {mark} CONSUL ACL MASTER TOKEN ANSIBLE MANAGED BLOCK -->"
+      block: |
+        consul_acl_master_token: "{{ consul_acl_master_token | default(ansible_local.consul_acl_master_token.consul_acl_master_token) }}"
+      create: yes
+    delegate_to: localhost
+    become: no
+  when: ansible_local.consul_acl_master_token.consul_acl_master_token is not defined
+
+- name: "Consul Install | Block ACL Replication token"
+  block:
+  - name: "Consul Install | Save ACL Replication token"
+    ansible.builtin.set_fact:
+      consul_acl_replication_token: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters') | to_uuid }}"
+
+  - ansible.builtin.set_fact:
+      consul_acl_replication_token_facts: |
+        {
+          "consul_acl_replication_token": "{{ consul_acl_replication_token }}"
+        }
+
+  - name: "Consul Install | Insert Consul encryption key in ansible local facts"
+    ansible.builtin.copy:
+      dest: /etc/ansible/facts.d/consul_acl_replication_token.fact
+      content: "{{ consul_acl_replication_token_facts | to_nice_json }}"
+      mode: "0600"
+  when: ansible_local.consul_acl_replication_token.consul_acl_replication_token is not defined
+
+- name: "Consul Install | Copy config file"
+  ansible.builtin.template:
+    src: "consul.hcl.j2"
+    dest: "{{ consul_conf_dir }}/consul.hcl"
+    owner: consul
+    group: consul
+    mode: '0644'
+
+- name: "Consul Install | Create Consul logs directory"
+  ansible.builtin.file:
+    path: "/var/log/consul"
+    state: directory
+    mode: '0755'
+    owner: "consul"
+    group: "consul"
+
+- name: "Consul Install | Start Consul"
+  ansible.builtin.systemd:
+    state: restarted
+    name: consul
+    enabled: true
+    daemon_reload: true
+
+- name: "Consul Install | Wait for Consul restarted"
+  ansible.builtin.wait_for:
+    host: "{{ consul_install_http_ip }}"
+    port: "{{ consul_install_http_port }}"
+
+- name: "Consul Install | Reload local facts"
+  ansible.builtin.setup:
+    filter: ansible_local

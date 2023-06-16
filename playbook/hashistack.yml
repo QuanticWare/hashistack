@@ -1,0 +1,7 @@
+- name: Hashistack Installation
+  hosts: hosttarget
+  become: yes
+  tasks:
+  - name: Install Hashistack
+    ansible.builtin.import_role:
+      name: quanticware.hashistack.install

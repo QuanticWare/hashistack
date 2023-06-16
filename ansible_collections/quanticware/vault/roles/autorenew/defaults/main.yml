@@ -1,0 +1,132 @@
+---
+# defaults file for Vault Auto-Renew
+app_name: vault-autorenew
+role_user: root
+install_method: nomad
+fqdn: "{{ app_name }}"
+http_scheme: http
+
+# Ansible
+deploy_credentials: true
+deploy_pretasks: false
+deploy_posttasks: false
+
+# Vault autorenew specs
+# General
+vault_http_scheme: "https"
+vault_http_ip: "{{ docker_gateway }}"
+vault_http_port: 8200
+vault_operate_dc_name: "dc1"
+
+# TLS
+vault_operate_tls_ca_host: localhost
+vault_operate_tls_ca_host_dir: "{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/tls"
+vault_operate_tls_ca_pubkey: "hashistack-ca.pem"
+vault_operate_tls_ca_privatekey: "hashistack-ca-key.pem"
+vault_operate_tls_ca_provider: "ownca"
+
+vault_operate_tls_host_certificate_dir: "/etc/ssl/hashistack"
+
+vault_operate_tls_cert: "{{ vault_operate_dc_name }}-server-vault.pem"
+vault_operate_tls_privatekey: "{{ vault_operate_dc_name }}-server-vault.key"
+
+# Renew
+vault_token_renew_ttl: "768h"
+vault_token_renew_self: true
+
+# Prometheus info
+group_01_metrics_exporter: True
+
+# Nomad info
+job_name: "{{ fqdn }}"
+
+nomad_deploy: true
+nomad_url: ""
+nomad_http_auth: true
+
+nomad_job_specs_datacenter: "dc1"
+nomad_job_specs_region: "global"
+
+nomad_job_constraint_node_unique_name: False
+
+nomad_periodic_state: true
+nomad_periodic:
+  cron: "0 0 5 * *"
+  prohibit_overlap: "true"
+  timezone: "Europe/Paris"
+
+# Group 01
+group_01_group_name: "{{ app_name }}"
+
+group_01_nomad_count: 1
+
+group_01_image_tag: "latest"
+group_01_task_name: "{{ app_name }}"
+group_01_task_custom: true
+group_01_task_config_custom: false
+group_01_service_custom: false
+group_01_service_main_custom: false
+
+
+# Consul info
+group_01_consul_connect_native: false
+group_01_consul_connect: false
+group_01_app_name_tag: "{{ app_name }}"
+
+group_01_consul_connect_server_state: false
+group_01_consul_connect_server:
+  sidecar_service:
+  - { name: "none", port: 0000 }
+group_01_consul_server_sidecar_task_cpu: 32
+group_01_consul_server_sidecar_task_memory: 32
+
+group_01_consul_connect_client_state: false
+group_01_consul_connect_client:
+  sidecar_service:
+  - { name: "none", port: 0000 }
+group_01_consul_client_sidecar_task_cpu: 32
+group_01_consul_client_sidecar_task_memory: 32
+
+consul_operation: true
+consul_host: 172.26.64.1
+consul_host_mesh: 172.26.64.1
+
+
+# Vault info
+vault_state: write # read / write / both / none
+
+vault:
+  policies: access-creds
+  secret: "apps/data/{{ fqdn }}"
+
+vault_path_mariadb: "apps/data/mariadb/users"
+
+# vault_secret:
+#   data:
+
+# Notification from Ansible
+notification: false
+
+# by Mail
+mail_subject: "Ansible: {{ fqdn }}"
+mail_msg: '<h3><a href="{{ fqdn }}">{{ fqdn }}</a></h3><br /><br />'
+mail_to: "{{ operator }}"
+
+# by RocketChat
+rocketchat_msg: "Ansible Tasks Deploy"
+rocketchat_attachments: true
+rocketchat_attachments_text: "Success!"
+rocketchat_attachments_title: "Info"
+rocketchat_attachments_collapsed: "false"
+rocketchat_attachments_fields:
+- { short: "true", title: "URL", value: "{{ fqdn }}" }
+
+# by NTFY
+ntfy_msg: |
+  URL: {{ fqdn }}
+
+# Security
+credentials_delivery: "mail" # mail, rocketchat, none
+
+# Firewall info
+firewall: false

@@ -1,0 +1,14 @@
+---
+# tasks file for cni
+- name: "CNI | Check existing installation"
+  ansible.builtin.stat:
+    path: /opt/cni/bin/bridge
+  register: cni_install
+
+- name: "CNI | Install"
+  ansible.builtin.include_tasks: "install.yml"
+  when: cni_install.stat.exists == false
+
+- name: "CNI | Upgrade"
+  ansible.builtin.include_tasks: "upgrade.yml"
+  when: cni_install.stat.exists == true

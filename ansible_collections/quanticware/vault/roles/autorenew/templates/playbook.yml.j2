@@ -1,0 +1,54 @@
+- name: Renew Vault Token
+  hosts: localhost
+  gather_facts: false
+  become: no
+  connection: local
+  vars:
+    vault_http_scheme: {{ vault_http_scheme }}
+    vault_http_ip: {{ vault_http_ip }}
+    vault_http_port: {{ vault_http_port }}
+    vault_operate_tls_host_certificate_dir: {{ vault_operate_tls_host_certificate_dir }}
+    vault_operate_tls_ca_pubkey: {{ vault_operate_tls_ca_pubkey }}
+    vault_operate_tls_cert: {{ vault_operate_tls_cert }}
+    vault_operate_tls_privatekey: {{ vault_operate_tls_privatekey }}
+    vault_token_renew_ttl: {{ vault_token_renew_ttl }}
+    vault_token_renew_self: {{ vault_token_renew_self }}
+{% raw %}
+  tasks:
+  - name: Vault Token | Renew a token
+    ansible.builtin.uri:
+      url: "{{`{{ vault_http_scheme }}`}}://{{`{{ vault_http_ip }}`}}:{{`{{ vault_http_port }}`}}/v1/auth/token/renew"
+      ca_path: "{{`{{ vault_operate_tls_host_certificate_dir }}`}}/{{`{{ vault_operate_tls_ca_pubkey }}`}}"
+      client_cert: "{{`{{ vault_operate_tls_host_certificate_dir }}`}}/{{`{{ vault_operate_tls_cert }}`}}"
+      client_key: "{{`{{ vault_operate_tls_host_certificate_dir }}`}}/{{`{{ vault_operate_tls_privatekey }}`}}"
+      method: POST
+      headers:
+        X-Vault-Token: "{{`{{ lookup('ansible.builtin.env', 'VAULT_ROOT_TOKEN') }}`}}"
+      body: |
+        {
+          "token": "{{`{{ lookup('ansible.builtin.env', 'VAULT_TOKEN') }}`}}",
+          "increment": "{{`{{ vault_token_renew_ttl }}`}}"
+        }
+      body_format: json
+      status_code:
+        - 200
+    when: vault_token_renew_self == false
+
+  - name: Vault Token | Renew a token self
+    ansible.builtin.uri:
+      url: "{{`{{ vault_http_scheme }}`}}://{{`{{ vault_http_ip }}`}}:{{`{{ vault_http_port }}`}}/v1/auth/token/renew-self"
+      ca_path: "{{`{{ vault_operate_tls_host_certificate_dir }}`}}/{{`{{ vault_operate_tls_ca_pubkey }}`}}"
+      client_cert: "{{`{{ vault_operate_tls_host_certificate_dir }}`}}/{{`{{ vault_operate_tls_cert }}`}}"
+      client_key: "{{`{{ vault_operate_tls_host_certificate_dir }}`}}/{{`{{ vault_operate_tls_privatekey }}`}}"
+      method: POST
+      headers:
+        X-Vault-Token: "{{`{{ lookup('ansible.builtin.env', 'VAULT_TOKEN') }}`}}"
+      body: |
+        {
+          "increment": "{{`{{ vault_token_renew_ttl }}`}}"
+        }
+      body_format: json
+      status_code:
+        - 200
+    when: vault_token_renew_self == true
+{% endraw %}

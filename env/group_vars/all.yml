@@ -1,0 +1,4 @@
+# General
+project_dir: "~/labo/hashistack"
+ansible_python_interpreter: "/usr/bin/python3"
+ansible_ssh_extra_args: -F /dev/null -o GlobalKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null

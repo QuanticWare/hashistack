@@ -1,0 +1,108 @@
+- name: "Docker TLS | Check if TLS CA cert exists"
+  ansible.builtin.stat:
+    path: "{{ docker_ca_install_tls_host_certificate_dir }}/{{ docker_ca_install_tls_ca_pubkey }}"
+  register: cert_tls_present
+
+- name: "Docker TLS | Get information on CA generated certificate"
+  community.crypto.x509_certificate_info:
+    path: "{{ docker_ca_install_tls_host_certificate_dir }}/{{ docker_ca_install_tls_ca_pubkey }}"
+    valid_at:
+      delay: "{{ docker_server_tls_check_delay }}"
+  register: tls_check
+  when: cert_tls_present.stat.exists == true
+
+- name: "Docker TLS | Create CA"
+  ansible.builtin.import_role:
+    name: quanticware.certificate.create
+    tasks_from: ca
+  vars:
+    ca_host: "{{ docker_ca_install_tls_ca_host }}"
+    ca_host_dir: "{{ docker_ca_install_tls_ca_host_dir }}"
+    ca_pubkey: "{{ docker_ca_install_tls_ca_pubkey }}"
+    ca_privatekey: "{{ docker_ca_install_tls_ca_privatekey }}"
+    host_certificate_dir: "{{ docker_ca_install_tls_host_certificate_dir }}"
+    common_name: "{{ docker_ca_install_tls_common_name }}"
+  when: cert_tls_present.stat.exists == false or
+        (cert_tls_present.stat.exists == true and tls_check.valid_at.delay == false)
+
+- name: "Docker TLS | Check if TLS Server cert exists"
+  ansible.builtin.stat:
+    path: "{{ docker_server_tls_host_certificate_dir }}/{{ docker_server_tls_cert }}"
+  register: cert_tls_present
+
+- name: "Docker TLS | Get information on Server generated certificate"
+  community.crypto.x509_certificate_info:
+    path: "{{ docker_server_tls_host_certificate_dir }}/{{ docker_server_tls_cert }}"
+    valid_at:
+      delay: "{{ docker_server_tls_check_delay }}"
+  register: tls_check
+  when: cert_tls_present.stat.exists == true
+
+- name: "Docker TLS | Create Server Cert"
+  ansible.builtin.import_role:
+    name: quanticware.certificate.create
+    tasks_from: client
+  vars:
+    host_certificate_dir: "{{ docker_server_tls_host_certificate_dir }}"
+    ca_host_dir: "{{ docker_server_tls_ca_host_dir }}"
+    ca_pubkey: "{{ docker_server_tls_ca_pubkey }}"
+    ca_privatekey: "{{ docker_server_tls_ca_privatekey }}"
+    ca_provider: "{{ docker_server_tls_ca_provider }}"
+    ca_host: "{{ docker_server_tls_ca_host }}"
+    cert: "{{ docker_server_tls_cert }}"
+    client_privatekey: "{{ docker_server_tls_privatekey }}"
+    common_name: "{{ docker_server_tls_common_name }}"
+    subject_alt_name: "{{ docker_server_tls_subject_alt_name }}"
+  when: cert_tls_present.stat.exists == false or
+        (cert_tls_present.stat.exists == true and tls_check.valid_at.delay == false)
+
+- name: "Docker TLS | Check if TLS Client cert exists"
+  ansible.builtin.stat:
+    path: "{{ docker_client_tls_host_certificate_dir }}/{{ docker_client_tls_cert }}"
+  register: cert_tls_present
+
+- name: "Docker TLS | Get information on Client generated certificate"
+  community.crypto.x509_certificate_info:
+    path: "{{ docker_client_tls_host_certificate_dir }}/{{ docker_client_tls_cert }}"
+    valid_at:
+      delay: "{{ docker_client_tls_check_delay }}"
+  register: tls_check
+  when: cert_tls_present.stat.exists == true
+
+- name: "Docker TLS | Create Client Cert"
+  ansible.builtin.import_role:
+    name: quanticware.certificate.create
+    tasks_from: client
+  vars:
+    host_certificate_dir: "{{ docker_client_tls_host_certificate_dir }}"
+    ca_host_dir: "{{ docker_client_tls_ca_host_dir }}"
+    ca_pubkey: "{{ docker_client_tls_ca_pubkey }}"
+    ca_privatekey: "{{ docker_client_tls_ca_privatekey }}"
+    ca_provider: "{{ docker_client_tls_ca_provider }}"
+    ca_host: "{{ docker_client_tls_ca_host }}"
+    cert: "{{ docker_client_tls_cert }}"
+    client_privatekey: "{{ docker_client_tls_privatekey }}"
+    common_name: "{{ docker_client_tls_common_name }}"
+    subject_alt_name: "{{ docker_client_tls_subject_alt_name }}"
+  when: cert_tls_present.stat.exists == false or
+        (cert_tls_present.stat.exists == true and tls_check.valid_at.delay == false)
+
+- name: "Docker TLS | Create systemd override directory for dockerd"
+  ansible.builtin.file:
+    path: "/etc/systemd/system/docker.service.d"
+    state: directory
+    mode: '0755'
+    owner: "root"
+    group: "root"
+
+- name: Docker TLS | Template for systemd override
+  ansible.builtin.template:
+    src: "override.conf.j2"
+    dest: "/etc/systemd/system/docker.service.d/override.conf"
+    mode: '0644'
+
+- name: "Docker TLS | Restart dockerd"
+  ansible.builtin.systemd:
+    state: restarted
+    name: docker
+    daemon_reload: true

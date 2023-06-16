@@ -1,0 +1,56 @@
+cluster_name = "{{ vault_install_dc_name }}"
+max_lease_ttl = "{{ vault_install_max_lease_ttl }}"
+default_lease_ttl = "{{ vault_install_default_lease_ttl }}"
+
+disable_clustering = "{{ vault_install_disable_clustering }}"
+cluster_addr = "{{ vault_install_cluster_addr }}"
+api_addr = "{{ vault_install_api_addr }}"
+disable_mlock = "{{ vault_install_disable_mlock }}"
+
+log_file = "{{ vault_install_log_file }}"
+log_level = "{{ vault_install_log_level }}"
+log_rotate_bytes = {{ vault_install_log_rotate_bytes }}
+log_rotate_duration = "{{ vault_install_log_rotate_duration }}"
+log_rotate_max_files = {{ vault_install_log_rotate_max_files }}
+
+listener "tcp" {
+  address = "{{ vault_install_listener_tcp_address }}"
+  cluster_address = "{{ vault_install_listener_tcp_cluster_address }}"
+  tls_client_ca_file="{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}"
+  tls_cert_file = "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_cert }}"
+  tls_key_file = "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_privatekey }}"
+  tls_min_version  = "{{ vault_install_tls_min_version }}"
+  tls_disable = "{{ vault_install_tls_disable | lower }}"
+}
+
+backend "consul" {
+  address = "{{ vault_install_backend_consul_http_ip }}:{{ vault_install_backend_consul_http_port }}"
+  path = "{{ vault_install_backend_consul_path }}"
+  service = "{{ vault_install_backend_consul_service }}"
+  token = "{{ consul_vault_token | default(ansible_local.consul_vault_token.consul_vault_token) }}"
+  scheme = "{{ vault_install_backend_consul_http_scheme }}"
+  tls_ca_file="{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}"
+  tls_cert_file = "{{ vault_install_tls_host_certificate_dir }}/dc1-server-consul.pem"
+  tls_key_file = "{{ vault_install_tls_host_certificate_dir }}/dc1-server-consul.key"
+}
+
+service_registration "consul" {
+  address = "{{ vault_install_backend_consul_http_ip }}:{{ vault_install_backend_consul_http_port }}"
+  check_timeout = "{{ vault_install_backend_consul_check_timeout }}"
+  disable_registration = "{{ vault_install_backend_consul_disable_registration }}"
+  scheme = "{{ vault_install_backend_consul_http_scheme }}"
+  service = "{{ vault_install_backend_consul_service }}"
+  service_tags = ""
+  token = "{{ consul_vault_token | default(ansible_local.consul_vault_token.consul_vault_token) }}"
+  tls_ca_file="{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}"
+  tls_cert_file = "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_backend_consul_tls_cert }}"
+  tls_key_file = "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_backend_consul_tls_privatekey }}"
+  tls_min_version = "{{ vault_install_backend_consul_tls_min_version }}"
+  tls_skip_verify = "{{ vault_install_backend_consul_tls_skip_verify }}"
+}
+
+telemetry {
+    prometheus_retention_time = "{{ vault_install_prometheus_retention_time }}"
+}
+
+ui = {{ vault_install_ui_enabled }}

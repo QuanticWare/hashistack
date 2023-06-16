@@ -1,0 +1,11 @@
+[Unit]
+Description=Podman API service
+
+[Service]
+User=root
+WorkingDirectory=/var/run/
+ExecStart=podman system service --timeout 0 unix:///run/podman/podman.sock
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

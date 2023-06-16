@@ -1,0 +1,17 @@
+---
+# handlers file for hashistack
+
+- name: consul_restart
+  systemd:
+    name: consul
+    state: restarted
+
+- name: vault_restart
+  systemd:
+    name: vault
+    state: restarted
+
+- name: nomad_restart
+  systemd:
+    name: nomad
+    state: restarted

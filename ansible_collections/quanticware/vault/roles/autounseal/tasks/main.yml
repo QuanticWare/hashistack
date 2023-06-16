@@ -1,0 +1,28 @@
+---
+# tasks file for backup
+
+- name: "Vault Unseal | Install pip module"
+  ansible.builtin.pip:
+    name: "{{ item }}"
+  loop:
+  - ansible
+
+- name: "Vault Unseal | Copy auto-unseal playbook"
+  ansible.builtin.template:
+    src: "vault_unseal.yml.j2"
+    dest: "/root/vault_unseal.yml"
+    mode: "0644"
+
+- name: "Vault Unseal | Copy service systemd file"
+  copy:
+    src: vault-unseal.service
+    dest: /lib/systemd/system/vault-unseal.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: "Vault Unseal | Register systemd service"
+  ansible.builtin.systemd:
+    name: vault-unseal.service
+    enabled: true
+    daemon_reload: true

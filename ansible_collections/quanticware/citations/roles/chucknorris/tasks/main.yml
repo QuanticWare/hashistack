@@ -1,0 +1,12 @@
+---
+# tasks file for chuck-norris
+
+- name: "{{ philosopher }}:"
+  ansible.builtin.debug:
+    msg: "{{ fr | random }}"
+  when: language == "fr"
+
+- name: "{{ philosopher }}:"
+  ansible.builtin.debug:
+    msg: "{{ en | random }}"
+  when: language == "en"

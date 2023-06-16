@@ -1,0 +1,12 @@
+---
+# defaults file for upgrade
+
+app_name: vault
+role_user: root
+
+check_online_version: true
+
+vault_version: 1.13
+
+standard_path: "/usr/local/bin"
+vault_path: "{{ standard_path }}"

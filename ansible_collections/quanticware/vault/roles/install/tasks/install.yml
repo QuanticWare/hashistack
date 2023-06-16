@@ -1,0 +1,37 @@
+- name: "Vault Install | Install binary"
+  ansible.builtin.apt:
+    name: vault
+    update_cache: yes
+
+- name: "Vault Install | Prevent Vault from being upgraded"
+  ansible.builtin.dpkg_selections:
+    name: vault
+    selection: hold
+
+- name: "Vault Install | Copy config file"
+  ansible.builtin.template:
+    src: "vault.hcl.j2"
+    dest: "{{ vault_conf_dir }}/vault.hcl"
+    owner: vault
+    group: vault
+    mode: '0644'
+
+- name: "Vault Install | Create Vault logs directory"
+  ansible.builtin.file:
+    path: "/var/log/vault"
+    state: directory
+    mode: '0755'
+    owner: "vault"
+    group: "vault"
+
+- name: "Vault Install | Start Vault"
+  ansible.builtin.systemd:
+    state: restarted
+    name: vault
+    enabled: true
+    daemon_reload: true
+
+- name: "Vault Install | Wait for Vault restarted"
+  ansible.builtin.wait_for:
+    host: "{{ vault_install_http_ip }}"
+    port: "{{ vault_install_http_port }}"

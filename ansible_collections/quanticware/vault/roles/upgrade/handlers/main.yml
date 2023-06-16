@@ -1,0 +1,7 @@
+---
+# handlers file for upgrade
+
+- name: vault_restart
+  systemd:
+    name: vault
+    state: restarted

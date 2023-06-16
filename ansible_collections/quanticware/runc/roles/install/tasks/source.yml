@@ -1,0 +1,33 @@
+- name: runC | Check if go already installed
+  ansible.builtin.stat:
+    path: /usr/local/go/bin/go
+  register: go_installed
+
+- name: runC | Install Go
+  ansible.builtin.import_role:
+    name: quanticware.go.install
+  when: go_installed.stat.exists == false
+
+- name: runC | Git clone runc repository
+  ansible.builtin.git:
+    repo: 'https://github.com/opencontainers/runc.git'
+    dest: "/usr/local/go/src/github.com/opencontainers/runc"
+
+- name: runC | Make runc
+  community.general.make:
+    chdir: "/usr/local/go/src/github.com/opencontainers/runc"
+    params:
+      PATH: "$PATH:/usr/local/go/bin"
+
+- name: runC | Copy runc executable
+  ansible.builtin.copy:
+    src: /usr/local/go/src/github.com/opencontainers/runc/runc
+    dest: /usr/bin/runc
+    remote_src: true
+
+- name: runC | Change chmod runc executable
+  ansible.builtin.file:
+    path: "/usr/bin/runc"
+    owner: root
+    group: root
+    mode: '0755'

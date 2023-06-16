@@ -1,0 +1,12 @@
+---
+# defaults file for upgrade
+
+app_name: consul
+role_user: root
+
+check_online_version: true
+
+consul_version: 1.15
+
+binary_path: "/usr/local/bin"
+consul_path: "{{ binary_path }}"

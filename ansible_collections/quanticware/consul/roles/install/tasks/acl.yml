@@ -1,0 +1,40 @@
+- name: Consul ACL | Reload local facts
+  ansible.builtin.setup:
+    filter: ansible_local
+
+- name: "Consul ACL | Create Consul policy"
+  ansible.builtin.import_role:
+    name: "quanticware.consul.operate"
+    tasks_from: create_policy
+  vars:
+    consul_policy_name: agent-service
+    consul_policy_rules: 'service_prefix \"\" {\n \"policy\" = \"write\"\n }\n \n node_prefix \"\" {\n \"policy\" = \"write\"\n }\n \n agent_prefix \"\" {\n \"policy\" = \"write\"\n }\n'
+
+- name: "Consul Token |  Create Consul token"
+  ansible.builtin.import_role:
+    name: "quanticware.consul.operate"
+    tasks_from: create_token
+  vars:
+    consul_token_name: "agent"
+    consul_policy_name: "agent-service"
+
+- name: "Consul Token | Set agent token to default token for fix service deregistering"
+  ansible.builtin.uri:
+    url: "{{ consul_install_http_scheme }}://{{ consul_install_http_ip }}:{{ consul_install_http_port }}/v1/agent/token/agent"
+    ca_path: "{{ consul_install_tls_host_certificate_dir }}/{{ consul_install_tls_ca_pubkey }}"
+    client_cert: "{{ consul_install_tls_host_certificate_dir }}/{{ consul_install_tls_cert }}"
+    client_key: "{{ consul_install_tls_host_certificate_dir }}/{{ consul_install_tls_privatekey }}"
+    method: PUT
+    headers:
+      X-Consul-Token: "{{ consul_acl_master_token | default(ansible_local.consul_acl_master_token.consul_acl_master_token) }}"
+    body: |
+        {
+          "Token": "{{ ansible_local.consul_agent_token.consul_agent_token }}"
+        }
+    body_format: json
+    status_code:
+        - 200
+
+- name: "Consul ACL | Reload local facts"
+  ansible.builtin.setup:
+    filter: ansible_local

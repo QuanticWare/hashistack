@@ -1,0 +1,11 @@
+- name: "Consul Operate | Deregister service {{ consul_service_name }}"
+  ansible.builtin.uri:
+    url: "{{ consul_http_scheme }}://{{ consul_http_ip }}:{{ consul_http_port }}/v1/agent/service/deregister/{{ consul_service_name }}"
+    ca_path: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_ca_pubkey }}"
+    client_cert: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_cert }}"
+    client_key: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_privatekey }}"
+    method: PUT
+    headers:
+      X-Consul-Token: "{{ consul_acl_master_token | default(consul_master_token) }}"
+    status_code:
+        - 200

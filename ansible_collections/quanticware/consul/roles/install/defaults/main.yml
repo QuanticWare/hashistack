@@ -1,0 +1,145 @@
+---
+# defaults file for install
+
+# General
+consul_install_mode: "single_node"
+
+consul_install_http_scheme: "https"
+consul_install_http_ip: "127.0.0.1"
+consul_install_http_port: "8501"
+
+check_online_version: true
+
+consul_install_dc_name: "dc1"
+
+consul_iface: "{{ ansible_default_ipv4.interface }}"
+consul_bind_address: "{% if consul_install_mode == 'single_node' %}127.0.0.1{% else %}{{ hostvars[inventory_hostname]['ansible_'+ consul_iface | replace('-', '_')]['ipv4']['address'] }}{% endif %}"
+consul_install_client_addr: "127.0.0.1"
+
+consul_install_bootstrap: "false"
+consul_install_bootstrap_expect: 1
+
+consul_conf_dir: "/etc/consul.d"
+consul_config_file: "/etc/consul/config.json"
+consul_bin_dir: "/usr/bin"
+
+consul_install_data_dir: "/opt/consul"
+consul_install_disable_update_check: "false"
+consul_install_domain: "consul"
+consul_install_enable_local_script_checks: "false"
+consul_install_enable_script_checks: "false"
+
+consul_install_encrypt_verify_incoming: "true"
+consul_install_encrypt_verify_outcoming: "true"
+
+consul_install_primary_datacenter: "{{ consul_install_dc_name }}"
+
+consul_install_raft_protocol: 3
+consul_install_retry_interval: "30s"
+consul_install_retry_interval_wan: "30s"
+consul_install_retry_join:
+- "{{ consul_bind_address }}"
+consul_install_retry_max: 0
+consul_install_retry_max_wan: 0
+consul_install_server: "true"
+
+# Log
+consul_install_debug: "false"
+consul_install_log_file: "/var/log/consul/consul.log"
+consul_install_log_level: "INFO"
+consul_install_log_rotate_bytes: 0
+consul_install_log_rotate_duration: "24h"
+consul_install_log_rotate_max_files: 0
+
+# Performance
+consul_install_performance_leave_drain_time: "5s"
+consul_install_performance_raft_multiplier: 1
+consul_install_performance_rpc_hold_timeout: "7s"
+
+
+# Addresses
+consul_install_addresses_advertise_addr: "{{ consul_bind_address }}"
+consul_install_addresses_advertise_addr_wan: "{{ consul_bind_address }}"
+
+consul_install_addresses_dns: "0.0.0.0"
+consul_install_addresses_grpc: "0.0.0.0"
+consul_install_addresses_http: "0.0.0.0"
+consul_install_addresses_https: "0.0.0.0"
+
+consul_install_consul_connect_enabled: "true"
+
+# Ports
+consul_install_port_dns: 8600
+consul_install_port_grpc: 8502
+consul_install_port_grpc_tls: 8503
+consul_install_port_http: -1
+consul_install_port_https: 8501
+consul_install_port_serf_lan: 8301
+consul_install_port_serf_wan: 8302
+consul_install_port_server:  8300
+
+# ACL
+consul_install_acl_default_policy: "deny"
+consul_install_acl_down_policy: "extend-cache"
+consul_install_acl_enable_token_persistence: "true"
+consul_install_acl_enabled: "true"
+consul_install_acl_token_ttl: "30s"
+
+# Auto Encrypt
+consul_install_auto_encrypt: "true"
+
+# Autopilot
+consul_install_autopilot_cleanup_dead_servers: "false"
+consul_install_autopilot_last_contact_threshold: "200ms"
+consul_install_autopilot_max_trailing_logs: 250
+consul_install_autopilot_server_stabilization_time: "10s"
+
+# TLS
+consul_install_tls_ca_host: localhost
+consul_install_tls_ca_host_dir: "{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/tls"
+consul_install_tls_ca_pubkey: "hashistack-ca.pem"
+consul_install_tls_ca_privatekey: "hashistack-ca-key.pem"
+consul_install_tls_ca_provider: "ownca"
+
+consul_install_tls_check_delay: "+2w"
+
+consul_install_tls_host_certificate_dir: "/etc/ssl/hashistack"
+
+consul_install_tls_cert: "{{ consul_install_dc_name }}-server-consul.pem"
+consul_install_tls_privatekey: "{{ consul_install_dc_name }}-server-consul.key"
+
+consul_install_tls_common_name: "*.{{ consul_install_dc_name }}.consul"
+consul_install_tls_subject_alt_name: "DNS:localhost,IP:127.0.0.1,IP:172.17.0.1,DNS:server.dc1.consul"
+
+consul_install_tls_tls_min_version: "TLSv1_2"
+consul_install_tls_verify_incoming: "true"
+consul_install_tls_verify_outgoing: "true"
+consul_install_tls_grpc_verify_incoming: "false" # CURRENTLY MANDATORY TO SET TO FALSE https://github.com/hashicorp/nomad/issues/16854 / https://github.com/hashicorp/consul/issues/16617
+consul_install_tls_https_verify_incoming: "false"
+consul_install_tls_internal_rpc_verify_incoming: "true"
+consul_install_tls_internal_rpc_verify_server_hostname: "true"
+
+# Envoy
+consul_install_envoy_tls_ca_host: localhost
+consul_install_envoy_tls_ca_host_dir: "{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/tls"
+consul_install_envoy_tls_ca_pubkey: "envoy-ca.pem"
+consul_install_envoy_tls_ca_privatekey: "envoy-ca-key.pem"
+consul_install_envoy_tls_ca_provider: "ownca"
+
+consul_install_envoy_tls_check_delay: "+2w"
+
+consul_install_envoy_tls_host_certificate_dir: "/etc/ssl/hashistack"
+
+consul_install_envoy_tls_cert: "{{ consul_install_dc_name }}-server-envoy.pem"
+consul_install_envoy_tls_privatekey: "{{ consul_install_dc_name }}-server-envoy.key"
+
+consul_install_envoy_tls_common_name: "*.{{ consul_install_dc_name }}.envoy"
+consul_install_envoy_tls_subject_alt_name: "DNS:localhost,IP:127.0.0.1,IP:172.17.0.1,IP:172.26.64.1,DNS:server.dc1.consul,URI:spiffe://b0b70cad-da07-55f2-5d9f-7144b009ad9b.consul"
+
+consul_install_envoy_tls_grpc_verify_incoming: true
+
+# Telemetry
+consul_install_prometheus_retention_time: "24h"
+
+# UI Config
+consul_install_ui_enabled: "true"

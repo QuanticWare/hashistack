@@ -1,0 +1,148 @@
+name = "{{ nomad_install_node_name }}"
+region = "{{ nomad_install_region }}"
+datacenter = "{{ nomad_install_dc_name }}"
+
+enable_debug = {{ nomad_install_debug }}
+disable_update_check = {{ nomad_install_disable_update_check }}
+
+
+bind_addr = "{{ nomad_install_bind_addr }}"
+advertise {
+    http = "{{ nomad_install_advertise_http }}"
+    rpc = "{{ nomad_install_advertise_rpc }}"
+    serf = "{{ nomad_install_advertise_serf }}"
+}
+ports {
+    http = {{ nomad_install_port_http }}
+    rpc = {{ nomad_install_port_rpc }}
+    serf = {{ nomad_install_port_serf }}
+}
+
+consul {
+    address      = "{{ nomad_install_backend_consul_http_ip }}:{{ nomad_install_backend_consul_http_port }}"
+    grpc_address = "{{ nomad_install_backend_consul_http_ip }}:{{ nomad_install_backend_consul_grpc_port }}"
+    ssl = {{ nomad_install_backend_consul_ssl }}
+    grpc_ca_file = "{{ nomad_install_backend_consul_tls_host_certificate_dir }}/{{ nomad_install_backend_consul_tls_ca_pubkey }}"
+    ca_file = "{{ nomad_install_backend_consul_tls_host_certificate_dir }}/{{ nomad_install_backend_consul_tls_ca_pubkey }}"
+    cert_file = "{{ nomad_install_backend_consul_tls_host_certificate_dir }}/{{ nomad_install_backend_consul_tls_cert }}"
+    key_file = "{{ nomad_install_backend_consul_tls_host_certificate_dir }}/{{ nomad_install_backend_consul_tls_privatekey }}"
+    token = "{{ consul_nomad_token | default(ansible_local.consul_nomad_token.consul_nomad_token) }}"
+    server_service_name = "{{ nomad_install_backend_consul_server_service_name }}"
+    client_service_name = "{{ nomad_install_backend_consul_client_service_name }}"
+    tags = {}
+
+    auto_advertise = {{ nomad_install_backend_consul_auto_advertise }}
+
+    server_auto_join = {{ nomad_install_backend_consul_server_auto_join }}
+    client_auto_join = {{ nomad_install_backend_consul_client_auto_join }}
+}
+
+data_dir = "{{ nomad_install_data_dir }}"
+
+log_file = "{{ nomad_install_log_file }}"
+log_level = "{{ nomad_install_log_level }}"
+log_rotate_bytes = {{ nomad_install_log_rotate_bytes }}
+log_rotate_duration = "{{ nomad_install_log_rotate_duration }}"
+log_rotate_max_files = {{ nomad_install_log_rotate_max_files }}
+
+leave_on_terminate = {{ nomad_install_leave_on_terminate | lower }}
+leave_on_interrupt = {{ nomad_install_leave_on_interrupt | lower }}
+
+tls {
+    http = {{ nomad_install_tls_http }}
+    rpc = {{ nomad_install_tls_rpc }}
+    ca_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_ca_pubkey }}"
+    cert_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_cert }}"
+    key_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_privatekey }}"
+    rpc_upgrade_mode = {{ nomad_install_tls_rpc_upgrade_mode }}
+    verify_server_hostname = "{{ nomad_install_tls_verify_server_hostname }}"
+    verify_https_client = "{{ nomad_install_tls_verify_https_client }}"
+}
+
+acl {
+    enabled = {{ nomad_install_acl_enabled }}
+    token_ttl = "{{ nomad_install_acl_token_ttl }}"
+    policy_ttl = "{{ nomad_install_acl_policy_ttl }}"
+    replication_token = ""
+}
+
+telemetry {
+    disable_hostname = "{{ nomad_install_telemetry_disable_hostname }}"
+    collection_interval = "{{ nomad_install_telemetry_collection_interval }}"
+    use_node_name = "{{ nomad_install_telemetry_use_node_name }}"
+    publish_allocation_metrics = "{{ nomad_install_telemetry_publish_allocation_metrics }}"
+    publish_node_metrics = "{{ nomad_install_telemetry_publish_node_metrics }}"
+    filter_default = "{{ nomad_install_telemetry_filter_default }}"
+    prefix_filter = []
+    disable_dispatched_job_summary_metrics = "{{ nomad_install_telemetry_disable_dispatched_job_summary_metrics }}"
+    statsite_address = ""
+    statsd_address = ""
+    datadog_address = ""
+    datadog_tags = []
+    prometheus_metrics = "{{ nomad_install_telemetry_prometheus_metrics }}"
+    circonus_api_token = ""
+    circonus_api_app = "{{ nomad_install_telemetry_circonus_api_app }}"
+    circonus_api_url = "{{ nomad_install_telemetry_circonus_api_url }}"
+    circonus_submission_interval = "{{ nomad_install_telemetry_circonus_submission_interval }}"
+    circonus_submission_url = ""
+    circonus_check_id = ""
+    circonus_check_force_metric_activation = "{{ nomad_install_telemetry_circonus_check_force_metric_activation }}"
+    circonus_check_instance_id = ""
+    circonus_check_search_tag = ""
+    circonus_check_display_name = ""
+    circonus_check_tags = ""
+    circonus_broker_id = ""
+    circonus_broker_select_tag = ""
+}
+
+autopilot {
+    cleanup_dead_servers      = {{ nomad_install_autopilot_cleanup_dead_servers }}
+    last_contact_threshold    = "{{ nomad_install_autopilot_last_contact_threshold }}"
+    max_trailing_logs         = {{ nomad_install_autopilot_max_trailing_logs }}
+    server_stabilization_time = "{{ nomad_install_autopilot_server_stabilization_time }}"
+}
+
+server {
+    enabled = {{ nomad_install_server_enabled }}
+
+    bootstrap_expect = {{ nomad_install_server_bootstrap_expect }}
+
+
+    rejoin_after_leave = {{ nomad_install_server_rejoin_after_leave }}
+
+    enabled_schedulers = [{% for item in nomad_install_server_enabled_schedulers %}"{{ item }}"{% if not loop.last %},{% endif %}{% endfor %}]
+    num_schedulers = {{ nomad_install_server_num_schedulers }}
+
+    node_gc_threshold = "{{ nomad_install_server_node_gc_threshold }}"
+    eval_gc_threshold = "{{ nomad_install_server_eval_gc_threshold }}"
+    job_gc_threshold = "{{ nomad_install_server_job_gc_threshold }}"
+    deployment_gc_threshold = "{{ nomad_install_server_deployment_gc_threshold }}"
+
+    encrypt = "{{ nomad_encrypt_key | default(ansible_local.nomad_encrypt_key.nomad_encrypt_key) }}"
+
+    raft_protocol = {{ nomad_install_server_raft_protocol }}
+}
+
+client {
+    enabled = {{ nomad_install_client_enabled }}
+
+    node_class = ""
+    no_host_uuid = {{ nomad_install_client_no_host_uuid }}
+
+
+    max_kill_timeout = "{{ nomad_install_client_max_kill_timeout }}"
+
+    network_speed = {{ nomad_install_client_network_speed }}
+    cpu_total_compute = {{ nomad_install_client_cpu_total_compute }}
+
+    gc_interval = "{{ nomad_install_client_gc_interval }}"
+    gc_disk_usage_threshold = {{ nomad_install_client_gc_disk_usage_threshold }}
+    gc_inode_usage_threshold = {{ nomad_install_client_gc_inode_usage_threshold }}
+    gc_parallel_destroys = {{ nomad_install_client_gc_parallel_destroys }}
+
+    reserved {
+        cpu = {{ nomad_install_client_reserved_cpu }}
+        memory = {{ nomad_install_client_reserved_memory }}
+        disk = {{ nomad_install_client_reserved_disk }}
+    }
+}

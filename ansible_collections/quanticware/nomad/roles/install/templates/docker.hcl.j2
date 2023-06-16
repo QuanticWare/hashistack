@@ -1,0 +1,34 @@
+plugin "docker" {
+    config {
+{% if docker_tls_configuration == true %}
+    	endpoint = "tcp://{{ nomad_install_docker_tcp_listen_address }}:{{ nomad_install_docker_tcp_listen_port }}"
+
+    	tls {
+      	  cert = "{{ nomad_install_docker_client_tls_host_certificate_dir }}/{{ nomad_install_docker_client_tls_cert }}"
+      	  key  = "{{ nomad_install_docker_client_tls_host_certificate_dir }}/{{ nomad_install_docker_client_tls_privatekey }}"
+      	  ca   = "{{ nomad_install_docker_client_tls_host_certificate_dir }}/{{ nomad_install_docker_client_tls_ca_pubkey }}"
+    	}
+{% else %}
+    	endpoint = "unix:///var/run/docker.sock"
+{% endif %}
+
+        allow_privileged = {{ nomad_install_docker_allow_privileged }}
+
+        volumes {
+            enabled = {{ nomad_install_docker_volume_enable }}
+        }
+
+        gc {
+        image       = {{ nomad_install_docker_gc_image }}
+        image_delay = "{{ nomad_install_docker_gc_image_delay }}"
+        container   = {{ nomad_install_docker_gc_container }}
+
+        dangling_containers {
+            enabled        = {{ nomad_install_docker_gc_dangling_containers_enabled }}
+            dry_run        = {{ nomad_install_docker_gc_dangling_containers_dry_run }}
+            period         = "{{ nomad_install_docker_gc_dangling_containers_period }}"
+            creation_grace = "{{ nomad_install_docker_gc_dangling_containers_creation_grace }}"
+            }
+        }
+    }
+}

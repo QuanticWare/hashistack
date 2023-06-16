@@ -1,0 +1,38 @@
+---
+# tasks file for install
+
+- name: "Nomad | Commons tasks"
+  ansible.builtin.include_tasks: "commons_tasks.yml"
+
+- name: Nomad | TLS Configuration
+  ansible.builtin.import_role:
+    name: quanticware.certificate.create
+    tasks_from: client
+  vars:
+    host_certificate_dir: "{{ nomad_install_tls_host_certificate_dir }}"
+    ca_host_dir: "{{ nomad_install_tls_ca_host_dir }}"
+    ca_pubkey: "{{ nomad_install_tls_ca_pubkey }}"
+    ca_privatekey: "{{ nomad_install_tls_ca_privatekey }}"
+    ca_provider: "{{ nomad_install_tls_ca_provider }}"
+    ca_host: "{{ nomad_install_tls_ca_host }}"
+    cert: "{{ nomad_install_tls_cert }}"
+    client_privatekey: "{{ nomad_install_tls_privatekey }}"
+    common_name: "{{ nomad_install_tls_common_name }}"
+    subject_alt_name: "{{ nomad_install_tls_subject_alt_name }}"
+  when: cert_tls_present.stat.exists == false or
+        (cert_tls_present.stat.exists == true and tls_check.valid_at.delay == false)
+
+- name: "Nomad | Consul ACL creation"
+  ansible.builtin.include_tasks: "consul_acl.yml"
+
+- name: "Nomad | Vault Configuration"
+  ansible.builtin.include_tasks: "vault.yml"
+
+- name: "Nomad | Install"
+  ansible.builtin.include_tasks: "install.yml"
+
+- name: "Nomad | Global Configuration"
+  ansible.builtin.include_tasks: "configuration.yml"
+
+- name: "Nomad | ACL Configuration"
+  ansible.builtin.include_tasks: "acl.yml"

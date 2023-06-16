@@ -1,0 +1,32 @@
+- name: Vault Policies | Check policies
+  ansible.builtin.uri:
+    url: "{{ vault_http_scheme }}://{{ vault_http_ip }}:{{ vault_http_port }}/v1/sys/policy"
+    ca_path: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_ca_pubkey }}"
+    client_cert: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_cert }}"
+    client_key: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_privatekey }}"
+    method: GET
+    headers:
+        X-Vault-Token: "{{ vault_init_result.json.root_token | default(vault_root_token) }}"
+    status_code:
+        - 200
+        - 404
+  register: vault_policies_list
+
+- name: Vault Policies | Create policy for {{ vault_policy_name }}
+  ansible.builtin.uri:
+    url: "{{ vault_http_scheme }}://{{ vault_http_ip }}:{{ vault_http_port }}/v1/sys/policy/{{ vault_policy_name }}"
+    ca_path: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_ca_pubkey }}"
+    client_cert: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_cert }}"
+    client_key: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_privatekey }}"
+    method: POST
+    headers:
+        X-Vault-Token: "{{ vault_init_result.json.root_token | default(vault_root_token) }}"
+    body: |
+        {
+        "policy": "{{ vault_policy_rules }}"
+        }
+    body_format: json
+    status_code:
+        - 200
+        - 204
+  when: vault_policy_name not in vault_policies_list.json.policies

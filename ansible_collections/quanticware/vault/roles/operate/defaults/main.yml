@@ -1,0 +1,59 @@
+---
+# defaults file for operate
+
+# General
+vault_http_scheme: "https"
+vault_http_ip: "127.0.0.1"
+vault_http_port: 8200
+
+vault_operate_log_level: info
+vault_operate_prometheus_retention_time: "24h"
+
+check_online_version: true
+
+vault_operate_dc_name: "dc1"
+
+#vault_url: "http://127.0.0.1:8200"
+vault_root_token: ""
+vault_secret_path: "apps/data/{{ fqdn }}" # /data/ is mandatory, vault specify
+
+# TLS
+vault_operate_tls_ca_host: localhost
+vault_operate_tls_ca_host_dir: "{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/tls"
+vault_operate_tls_ca_pubkey: "hashistack-ca.pem"
+vault_operate_tls_ca_privatekey: "hashistack-ca-key.pem"
+vault_operate_tls_ca_provider: "ownca"
+
+vault_operate_tls_host_certificate_dir: "/etc/ssl/hashistack"
+
+vault_operate_tls_cert: "{{ vault_operate_dc_name }}-server-vault.pem"
+vault_operate_tls_privatekey: "{{ vault_operate_dc_name }}-server-vault.key"
+
+# Read
+vault_secret_to_get: "password"
+
+# Write
+
+# Example:
+vault_secret:
+  data: # /data/ is mandatory, vault specify
+    fqdn: "{{ fqdn }}"
+    admin: "{{ admin }}"
+    password: "{{ password }}"
+
+# Token
+nomad_token: true
+nomad_conf_dir: "/etc/nomad.d"
+token_role_name: nomad
+token_ttl: "768h"
+vault_policies:
+  - nomad-server
+  - access-creds
+
+# Create KV
+vault_kv_name: "apps"
+
+# Renew
+# vault_token_renew_token:
+vault_token_renew_ttl: "768h"
+vault_token_renew_self: true

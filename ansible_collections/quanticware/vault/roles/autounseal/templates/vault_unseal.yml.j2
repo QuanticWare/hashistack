@@ -1,0 +1,40 @@
+- name: Unseal Vault
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Gather facts for unseal
+      ansible.builtin.setup:
+        filter: ansible_local
+
+    - name: Seal status
+      ansible.builtin.uri:
+        url: "{{ vault_install_http_scheme }}://{{ vault_install_http_ip }}:{{ vault_install_http_port }}/v1/sys/seal-status"
+        ca_path: "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}"
+        client_cert: "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_cert }}"
+        client_key: "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_privatekey }}"
+        method: GET
+        status_code:
+          - 200
+      register: vault_sealed_status
+
+    - name: Unseal vault
+      ansible.builtin.uri:
+        url: "{{ vault_install_http_scheme }}://{{ vault_install_http_ip }}:{{ vault_install_http_port }}/v1/sys/unseal"
+        ca_path: "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}"
+        client_cert: "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_cert }}"
+        client_key: "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_privatekey }}"
+        method: POST
+        body: |
+          {
+            "key": "{% raw %}{{ item }}{% endraw %}"
+          }
+        body_format: json
+        status_code:
+          - 200
+      no_log: true
+      loop:
+      - "{% raw %}{{ ansible_local.vault.vault_keys_base64.0 }}{% endraw %}"
+      - "{% raw %}{{ ansible_local.vault.vault_keys_base64.1 }}{% endraw %}"
+      - "{% raw %}{{ ansible_local.vault.vault_keys_base64.2 }}{% endraw %}"
+      when: vault_sealed_status.json.sealed == true

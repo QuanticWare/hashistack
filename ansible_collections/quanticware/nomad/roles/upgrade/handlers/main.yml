@@ -1,0 +1,7 @@
+---
+# handlers file for upgrade
+
+- name: nomad_restart
+  systemd:
+    name: nomad
+    state: restarted

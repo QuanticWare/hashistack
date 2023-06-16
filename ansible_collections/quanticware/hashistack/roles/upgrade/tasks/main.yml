@@ -1,0 +1,17 @@
+---
+#tasks file for {{ app_name }}
+
+- name: Upgrade Consul
+  ansible.builtin.import_role:
+    name: quanticware.consul.upgrade
+  when: consul_upgrade == True
+
+- name: Upgrade Consul
+  ansible.builtin.import_role:
+    name: quanticware.vault.upgrade
+  when: vault_upgrade == True
+
+- name: Upgrade Nomad
+  ansible.builtin.import_role:
+    name: quanticware.nomad.upgrade
+  when: nomad_upgrade == True

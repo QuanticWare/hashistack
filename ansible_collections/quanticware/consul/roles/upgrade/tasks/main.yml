@@ -1,0 +1,48 @@
+---
+# tasks file for upgrade
+
+- name: "Check Consul latest version online"
+  block:
+    - name: Consul | Retrieve brut list from hashicorp.com
+      uri:
+        url: "https://releases.hashicorp.com/consul/"
+        return_content: yes
+      register: consul_brut_list
+
+    - name: "Consul | Extract version number"
+      set_fact:
+        consul_version: '{{ consul_brut_list.content | regex_search("consul_[\d.]{3,}<") | regex_replace("<","") | regex_search("\d.*") }}'
+  when: check_online_version == True
+
+- name: "Check Consul installed version"
+  ansible.builtin.command: consul version
+  register: consul_installed_version
+
+- name: "Consul upgrade process"
+  block:
+    - name: Download and extract new version for ARM64
+      ansible.builtin.unarchive:
+        src: "https://releases.hashicorp.com/consul/{{ consul_version }}/consul_{{ consul_version }}_linux_arm64.zip"
+        dest: "{{ consul_path }}"
+        remote_src: yes
+      when: ansible_architecture == "aarch64"
+
+    - name: Download and extract new version for ARM
+      ansible.builtin.unarchive:
+        src: "https://releases.hashicorp.com/consul/{{ consul_version }}/consul_{{ consul_version }}_linux_arm.zip"
+        dest: "{{ consul_path }}"
+        remote_src: yes
+      when: ansible_architecture == "armv7l"
+
+    - name: Download and extract new version for x64
+      ansible.builtin.unarchive:
+        src: "https://releases.hashicorp.com/consul/{{ consul_version }}/consul_{{ consul_version }}_linux_amd64.zip"
+        dest: "{{ consul_path }}"
+        remote_src: yes
+      when: ansible_architecture == "x86_64"
+
+    - name: Restart Consul
+      systemd:
+        name: consul
+        state: restarted
+  when: consul_version is not in consul_installed_version.stdout

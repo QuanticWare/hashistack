@@ -1,0 +1,27 @@
+---
+# defaults file for operate
+
+# General
+nomad_http_scheme: "https"
+nomad_http_ip: "127.0.0.1"
+nomad_http_port: 4646
+nomad_job_files_dir: "/var/tmp"
+
+nomad_operate_log_level: info
+nomad_operate_prometheus_retention_time: "24h"
+
+check_online_version: true
+
+nomad_operate_dc_name: "dc1"
+
+# TLS
+nomad_operate_tls_ca_host: localhost
+nomad_operate_tls_ca_host_dir: "{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/tls"
+nomad_operate_tls_ca_pubkey: "hashistack-ca.pem"
+nomad_operate_tls_ca_privatekey: "hashistack-ca-key.pem"
+nomad_operate_tls_ca_provider: "ownca"
+
+nomad_operate_tls_host_certificate_dir: "/etc/ssl/hashistack"
+
+nomad_operate_tls_cert: "{{ nomad_operate_dc_name }}-server-nomad.pem"
+nomad_operate_tls_privatekey: "{{ nomad_operate_dc_name }}-server-nomad.key"

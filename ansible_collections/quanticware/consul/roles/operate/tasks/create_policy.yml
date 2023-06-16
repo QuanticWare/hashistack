@@ -1,0 +1,40 @@
+- name: "Consul Policy | Get policies list"
+  ansible.builtin.uri:
+    url: "{{ consul_http_scheme }}://{{ consul_http_ip }}:{{ consul_http_port }}/v1/acl/policies"
+    ca_path: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_ca_pubkey }}"
+    client_cert: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_cert }}"
+    client_key: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_privatekey }}"
+    method: GET
+    headers:
+      X-Consul-Token: "{{ consul_acl_master_token | default(ansible_local.consul_acl_master_token.consul_acl_master_token) }}"
+    status_code:
+        - 200
+        - 404
+    return_content: yes
+  register: consul_policies_list_raw
+
+- ansible.builtin.set_fact:
+    consul_policies_list: "{{ consul_policies_list_raw.json | community.general.json_query('[*].Name') | string }}"
+
+- name: "Consul Policy | Create policy for {{ consul_policy_name }} Consul access"
+  ansible.builtin.uri:
+    url: "{{ consul_http_scheme }}://{{ consul_http_ip }}:{{ consul_http_port }}/v1/acl/policy"
+    ca_path: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_ca_pubkey }}"
+    client_cert: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_cert }}"
+    client_key: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_privatekey }}"
+    method: PUT
+    headers:
+      X-Consul-Token: "{{ consul_acl_master_token | default(ansible_local.consul_acl_master_token.consul_acl_master_token) }}"
+    body: |
+        {
+          "Name": "{{ consul_policy_name | lower }}",
+          "Rules": "{{ consul_policy_rules }}"
+        }
+    body_format: json
+    status_code:
+        - 200
+  when: 'consul_policy_name not in consul_policies_list'
+
+- name: "Consul Policy | Reload local facts"
+  ansible.builtin.setup:
+    filter: ansible_local

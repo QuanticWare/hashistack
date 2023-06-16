@@ -1,0 +1,49 @@
+---
+# tasks file for upgrade
+
+- name: Check Nomad latest version online
+  block:
+    - name: Nomad | Retrieve brut list from hashicorp.com
+      uri:
+        url: "https://releases.hashicorp.com/nomad/"
+        return_content: yes
+      register: nomad_brut_list
+
+    - name: Nomad | Extract version number
+      set_fact:
+        nomad_version: '{{ nomad_brut_list.content | regex_search("nomad_[\d.]{3,}<") | regex_replace("<","") | regex_search("\d.*") }}'
+  when: check_online_version == True
+
+- name: Check Nomad installed version
+  ansible.builtin.command: nomad version
+  register: nomad_installed_version
+
+- name: Nomad upgrade process
+  block:
+    - name: Download and extract new version for ARM64
+      ansible.builtin.unarchive:
+        src: "https://releases.hashicorp.com/nomad/{{ nomad_version }}/nomad_{{ nomad_version }}_linux_arm64.zip"
+        dest: "{{ nomad_path }}"
+        remote_src: yes
+      when: ansible_architecture == "aarch64"
+
+    - name: Download and extract new version for ARM
+      ansible.builtin.unarchive:
+        src: "https://releases.hashicorp.com/nomad/{{ nomad_version }}/nomad_{{ nomad_version }}_linux_arm.zip"
+        dest: "{{ nomad_path }}"
+        remote_src: yes
+      when: ansible_architecture == "armv7l"
+
+    - name: Download and extract new version for x64
+      ansible.builtin.unarchive:
+        src: "https://releases.hashicorp.com/nomad/{{ nomad_version }}/nomad_{{ nomad_version }}_linux_amd64.zip"
+        dest: "{{ nomad_path }}"
+        remote_src: yes
+      when: ansible_architecture == "x86_64"
+
+    - name: Restart Nomad
+      systemd:
+        name: nomad
+        state: restarted
+
+  when: nomad_version is not in nomad_installed_version.stdout

@@ -1,0 +1,5 @@
+---
+# tasks file for operate
+
+- name: Vault | Action to perform
+  include_tasks: "{{ role_action }}.yml"

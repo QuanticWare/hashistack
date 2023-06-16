@@ -1,0 +1,7 @@
+---
+# handlers file for operate
+
+- name: nomad_restart
+  ansible.builtin.systemd:
+    name: nomad
+    state: restarted

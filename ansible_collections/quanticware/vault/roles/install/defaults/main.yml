@@ -1,0 +1,77 @@
+---
+# defaults file for install
+
+# General
+vault_install_mode: "single_node"
+
+vault_install_http_scheme: "https"
+vault_install_http_ip: "127.0.0.1"
+vault_install_http_port: 8200
+vault_install_cluster_port: 8201
+
+check_online_version: true
+vault_conf_dir: "/etc/vault.d"
+vault_config_file: "vault.hcl"
+vault_bin_dir: "/usr/bin"
+
+vault_install_dc_name: "dc1"
+vault_install_max_lease_ttl: "768h"
+vault_install_default_lease_ttl: "768h"
+vault_install_disable_clustering: "True"
+
+vault_install_ui_enabled: "true"
+
+vault_install_disable_mlock: false
+
+# Log
+vault_install_log_file: "/var/log/vault/vault.log"
+vault_install_log_level: "INFO"
+vault_install_log_rotate_bytes: 0
+vault_install_log_rotate_duration: "24h"
+vault_install_log_rotate_max_files: 0
+
+# Addresses
+vault_iface: "{{ ansible_default_ipv4.interface }}"
+vault_bind_address: "{% if vault_install_mode == 'single_node' %}127.0.0.1{% else %}{{ hostvars[inventory_hostname]['ansible_'+ vault_iface | replace('-', '_')]['ipv4']['address'] }}{% endif %}"
+
+vault_install_cluster_addr: "{{ vault_install_http_scheme }}://{{ vault_bind_address }}:{{ vault_install_cluster_port }}"
+vault_install_api_addr: "{{ vault_install_http_scheme }}://{{ vault_bind_address }}:{{ vault_install_http_port }}"
+vault_install_listener_tcp_address: "0.0.0.0:{{ vault_install_http_port }}"
+vault_install_listener_tcp_cluster_address: "{{ vault_bind_address }}:{{ vault_install_cluster_port }}"
+
+# TLS
+vault_install_tls_ca_host: localhost
+vault_install_tls_ca_host_dir: "{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/tls"
+vault_install_tls_ca_pubkey: "hashistack-ca.pem"
+vault_install_tls_ca_privatekey: "hashistack-ca-key.pem"
+vault_install_tls_ca_provider: "ownca"
+
+vault_install_tls_check_delay: "+2w"
+
+vault_install_tls_host_certificate_dir: "/etc/ssl/hashistack"
+
+vault_install_tls_cert: "{{ vault_install_dc_name }}-server-vault.pem"
+vault_install_tls_privatekey: "{{ vault_install_dc_name }}-server-vault.key"
+
+vault_install_tls_common_name: "*.{{ vault_install_dc_name }}.vault"
+vault_install_tls_subject_alt_name: "DNS:localhost,IP:127.0.0.1,IP:172.17.0.1,DNS:server.dc1.vault,IP:{{ hostvars[inventory_hostname]['ansible_'+ vault_iface | replace('-', '_')]['ipv4']['address'] }}"
+
+vault_install_tls_min_version: "tls12"
+vault_install_tls_disable: "false"
+
+
+# Consul
+vault_install_backend_consul_http_scheme: "https"
+vault_install_backend_consul_http_ip: "127.0.0.1"
+vault_install_backend_consul_http_port: 8501
+vault_install_backend_consul_tls_cert: "{{ vault_install_dc_name }}-server-consul.pem"
+vault_install_backend_consul_tls_privatekey: "{{ vault_install_dc_name }}-server-consul.key"
+vault_install_backend_consul_path: "vault"
+vault_install_backend_consul_service: "vault"
+vault_install_backend_consul_check_timeout: "5s"
+vault_install_backend_consul_disable_registration: "false"
+vault_install_backend_consul_tls_min_version: "tls12"
+vault_install_backend_consul_tls_skip_verify: "false"
+
+# Telemetry
+vault_install_prometheus_retention_time: "24h"

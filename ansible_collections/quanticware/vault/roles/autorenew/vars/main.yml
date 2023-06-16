@@ -1,0 +1,58 @@
+---
+# vars file for ansible-rundeck
+
+## Nomad info
+nomad_job_update: "{% if nomad_periodic_state == true %}false{% else %}true{% endif %}"
+nomad_job_specs_type: "{% if nomad_periodic_state == true %}batch{% else %}service{% endif %}"
+
+group_01_nomad_count: 1
+
+group_01_nomad_restart_policy: True
+group_01_nomad_restart_attempts: 10
+group_01_nomad_restart_interval: "5m"
+group_01_nomad_restart_delay: "10s"
+group_01_nomad_restart_mode: "delay"
+
+group_01_task_driver: "docker"
+group_01_task_size_cpu: 256
+group_01_task_size_memory: 256
+
+# group_01_nomad_install_webinterface_port: 80
+group_01_nomad_network_state: false
+group_01_nomad_network:
+  - { name: "none", port: 0000 }
+
+## Docker
+docker_compose_version: "3.9"
+docker_gateway: 172.17.0.1
+#docker_host_path_volume:
+
+docker_private_registry_state: true
+# docker_private_registry_creds:
+#   url: "xxx"
+#   username: "xxx"
+#   password: "xxx"
+
+group_01_image: "registry.quanticware.com/quanticware/ansible-tasker"
+
+group_01_volumes_state: true
+group_01_volumes:
+  - { type: "bind", target: "/etc/ssl/hashistack", source: "/etc/ssl/hashistack", readonly: "false", propagation: "rshared" }
+
+## Traefik info
+group_01_service_name: "{{ fqdn | replace('-', '') | replace('.', '') }}"
+group_01_traefik_access: "none"
+group_01_traefik_proxy_port: 80
+group_01_traefik_noindex: true
+
+group_01_traefik_tag_service: "{{ fqdn | replace('.', '-') }}-group-01"
+group_01_traefik_custom_tags: false
+group_01_traefik_custom_tags_list:
+- '"traefik.http.routers.{{ group_01_service_name }}.service=..."'
+
+group_01_traefik_consul_connect: true
+group_01_traefik_sidecar_task_cpu: 32
+group_01_traefik_sidecar_task_memory: 32
+
+group_01_security_basic_auth: False
+group_01_security_ip: False

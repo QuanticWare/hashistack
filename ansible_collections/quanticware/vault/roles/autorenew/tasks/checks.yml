@@ -1,0 +1,6 @@
+- name: "Vault Auto-Renew | Check if vault_token varable is set"
+  ansible.builtin.assert:
+    that:
+      - vault_token is defined
+    fail_msg: "Variable vault_token is not set"
+    quiet: true

@@ -1,0 +1,41 @@
+- name: Vault Token | Renew a token
+  ansible.builtin.uri:
+    url: "{{ vault_http_scheme }}://{{ vault_http_ip }}:{{ vault_http_port }}/v1/auth/token/renew"
+    ca_path: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_ca_pubkey }}"
+    client_cert: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_cert }}"
+    client_key: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_privatekey }}"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+    body: |
+      {
+        "token": "{{ vault_token }}",
+        "increment": "{{ vault_token_renew_ttl }}"
+      }
+    body_format: json
+    status_code:
+      - 200
+  register: "vault_token_renew"
+  when: vault_token_renew_self == false
+
+- name: Vault Token | Renew a token self
+  ansible.builtin.uri:
+    url: "{{ vault_http_scheme }}://{{ vault_http_ip }}:{{ vault_http_port }}/v1/auth/token/renew-self"
+    ca_path: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_ca_pubkey }}"
+    client_cert: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_cert }}"
+    client_key: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_privatekey }}"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_token }}"
+    body: |
+      {
+        "increment": "{{ vault_token_renew_ttl }}"
+      }
+    body_format: json
+    status_code:
+      - 200
+  register: "vault_token_renew"
+  when: vault_token_renew_self == true
+
+- debug:
+    msg: "{{ vault_token_renew }}"

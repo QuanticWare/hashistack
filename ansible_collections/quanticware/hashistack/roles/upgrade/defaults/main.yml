@@ -1,0 +1,22 @@
+---
+# defaults file for hashistack
+
+app_name: hashistack
+role_user: root
+
+# hashistack info
+check_online_version: False
+
+#consul_version: 1.12.3
+consul_upgrade: True
+
+#vault_version: 1.11.1
+vault_upgrade: True
+
+#nomad_version: 1.3.2
+nomad_upgrade: True
+
+binary_path: "/usr/local/bin"
+consul_path: "{{ binary_path }}"
+vault_path: "{{ binary_path }}"
+nomad_path: "{{ binary_path }}"

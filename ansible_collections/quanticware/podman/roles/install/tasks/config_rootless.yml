@@ -1,0 +1,119 @@
+
+- name: Podman | Create podman group
+  ansible.builtin.group:
+    name: "{{ podman_user }}"
+    state: present
+
+- name: Podman | Create podman user
+  ansible.builtin.user:
+    name: "{{ podman_user }}"
+    group: "{{ podman_user }}"
+    shell: "/bin/false"
+  register: user_info
+
+- name: Podman | Create podman systemd directory
+  file:
+    path: "/home/{{ podman_user }}/.config/systemd/user"
+    state: directory
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
+    mode: "0755"
+    recurse: yes
+
+- name: Podman | Set systemd runtime dir
+  ansible.builtin.set_fact:
+    xdg_runtime_dir: "/run/user/{{ user_info.uid }}"
+
+- set_fact:
+    podman_rootless_facts: |
+      {
+        "xdg_runtime_dir": "/run/user/{{ user_info.uid }}",
+        "podman_socket": "/run/user/{{ user_info.uid }}/podman/podman.sock",
+      }
+
+- name: Podman | Insert vars in ansible local facts
+  ansible.builtin.copy:
+    dest: /etc/ansible/facts.d/podman_rootless.fact
+    content: "{{ podman_rootless_facts | to_nice_json }}"
+    mode: "0600"
+
+- name: Podman | Add $XDG_RUNTIME_DIR to .profile
+  ansible.builtin.lineinfile:
+    path: "/home/{{ podman_user }}/.profile"
+    line: 'export XDG_RUNTIME_DIR="/run/user/$UID"'
+
+- name: Enable lingering is needed
+  command: "loginctl enable-linger {{ podman_user }}"
+
+- name: Podman | Templates systemd service
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "/home/{{ podman_user }}/.config/systemd/user/{{ item.dest }}"
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
+    mode: '0755'
+  loop:
+    - { src: "podman.socket.j2", dest: "podman.socket"}
+    - { src: "podman.service-rootless.j2", dest: "podman.service"}
+
+- name: Podman | Add sysctl info
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_set: yes
+    state: present
+    reload: yes
+  loop:
+    - { name: "net.ipv4.ip_unprivileged_port_start", value: "80" }
+    - { name: "net.ipv4.ping_group_range", value: "0 2000000" }
+
+- name: Podman | Add port to subuid/subgid
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    line: "{{ podman_user }}:100000:65536"
+  loop:
+    - /etc/subuid
+    - /etc/subgid
+
+- name: Podman | Create containers conf directory
+  ansible.builtin.file:
+    path: "/home/{{ podman_user }}/.config/containers"
+    state: directory
+    mode: '0755'
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
+    recurse: yes
+
+- name: Podman | Templates Podman configurations files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "/home/{{ podman_user }}/.config/containers/{{ item.dest }}"
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
+    mode: '0755'
+  loop:
+  - { src: "containers.conf.j2", dest: "containers.conf"}
+  - { src: "storage.conf.j2", dest: "storage.conf"}
+  - { src: "registries.conf.j2", dest: "registries.conf"}
+  - { src: "default-policy.json.j2", dest: "policy.json"}
+
+- name: Podman | Create ansible tmp directory
+  ansible.builtin.file:
+    path: "/home/{{ podman_user }}/.ansible/tmp"
+    state: directory
+    mode: '0755'
+    owner: "{{ podman_user }}"
+    group: "{{ podman_user }}"
+    recurse: yes
+
+- name:  Podman | Run systemd socket API
+  become_user: "{{ podman_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ xdg_runtime_dir }}"
+    DBUS_SESSION_BUS_ADDRESS: "unix:path=/run/user/{{ user_info.uid }}/bus"
+  ansible.builtin.systemd:
+    name: "podman.socket"
+    scope: "user"
+    state: "started"
+    enabled: true
+    daemon_reload: "true"

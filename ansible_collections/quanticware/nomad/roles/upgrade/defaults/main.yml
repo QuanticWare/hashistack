@@ -1,0 +1,12 @@
+---
+# defaults file for upgrade
+
+app_name: nomad
+role_user: root
+
+check_online_version: true
+
+nomad_version: 1.4.5
+
+binary_path: "/usr/local/bin"
+nomad_path: "{{ binary_path }}"

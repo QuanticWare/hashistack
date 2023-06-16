@@ -1,0 +1,7 @@
+---
+# handlers file for quanticware.docker
+- name: docker enable
+  ansible.builtin.systemd:
+    state: started
+    name: docker
+    enabled: yes

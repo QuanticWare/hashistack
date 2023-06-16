@@ -1,0 +1,117 @@
+datacenter = "{{ consul_install_dc_name }}"
+
+bind_addr = "{{ consul_bind_address }}"
+client_addr = "{{ consul_install_client_addr }}"
+
+bootstrap = {{ consul_install_bootstrap }}
+bootstrap_expect = {{ consul_install_bootstrap_expect }}
+
+data_dir = "{{ consul_install_data_dir }}"
+disable_update_check = {{ consul_install_disable_update_check }}
+domain = "{{ consul_install_domain }}"
+enable_local_script_checks = {{ consul_install_enable_local_script_checks }}
+enable_script_checks = {{ consul_install_enable_script_checks }}
+
+encrypt = "{{ consul_encrypt_key | default(ansible_local.consul_encrypt_key.consul_encrypt_key) }}"
+encrypt_verify_incoming = {{ consul_install_encrypt_verify_incoming }}
+encrypt_verify_outgoing = {{ consul_install_encrypt_verify_outcoming }}
+
+primary_datacenter = "{{ consul_install_primary_datacenter }}"
+raft_protocol = {{ consul_install_raft_protocol }}
+retry_interval = "{{ consul_install_retry_interval }}"
+retry_interval_wan = "{{ consul_install_retry_interval_wan }}"
+retry_join = [{% for item in consul_install_retry_join %}"{{ item }}"{% if not loop.last %},{% endif %}{% endfor %}]
+retry_max = {{ consul_install_retry_max }}
+retry_max_wan = {{ consul_install_retry_max_wan }}
+server = {{ consul_install_server }}
+
+enable_debug = {{ consul_install_debug }}
+log_file = "{{ consul_install_log_file }}"
+log_level = "{{ consul_install_log_level }}"
+log_rotate_bytes = {{ consul_install_log_rotate_bytes }}
+log_rotate_duration = "{{ consul_install_log_rotate_duration }}"
+log_rotate_max_files = {{ consul_install_log_rotate_max_files }}
+
+performance = {
+  leave_drain_time = "{{ consul_install_performance_leave_drain_time }}"
+  raft_multiplier = {{ consul_install_performance_raft_multiplier }}
+  rpc_hold_timeout = "{{ consul_install_performance_rpc_hold_timeout }}"
+}
+
+{% if consul_install_mode != 'single_node' %}
+advertise_addr = "{{ consul_install_addresses_advertise_addr }}"
+advertise_addr_wan = "{{ consul_install_addresses_advertise_addr_wan }}"
+{% endif %}
+
+addresses = {
+  dns = "{{ consul_install_addresses_dns }}"
+  grpc = "{{ consul_install_addresses_grpc }}"
+  http = "{{ consul_install_addresses_http }}"
+  https = "{{ consul_install_addresses_https }}"
+}
+
+connect = {
+  enabled = {{ consul_install_consul_connect_enabled }}
+}
+
+ports = {
+  dns = {{ consul_install_port_dns }}
+  grpc = {{ consul_install_port_grpc }}
+  grpc_tls = {{ consul_install_port_grpc_tls }}
+  http = {{ consul_install_port_http }}
+  https = {{ consul_install_port_https }}
+  serf_lan = {{ consul_install_port_serf_lan }}
+  serf_wan = {{ consul_install_port_serf_wan }}
+  server = {{ consul_install_port_server }}
+}
+
+acl = {
+  default_policy = "{{ consul_install_acl_default_policy }}"
+  down_policy = "{{ consul_install_acl_down_policy }}"
+  enable_token_persistence = {{ consul_install_acl_enable_token_persistence }}
+  enabled = {{ consul_install_acl_enabled }}
+  token_ttl = "{{ consul_install_acl_token_ttl }}"
+  tokens = {
+    initial_management = "{{ consul_acl_master_token | default(ansible_local.consul_acl_master_token.consul_acl_master_token) }}"
+    replication = "{{ consul_acl_replication_token | default(ansible_local.consul_acl_replication_token.consul_acl_replication_token) }}"
+  }
+}
+
+autopilot = {
+  cleanup_dead_servers = {{ consul_install_autopilot_cleanup_dead_servers }}
+  last_contact_threshold = "{{ consul_install_autopilot_last_contact_threshold }}"
+  max_trailing_logs = {{ consul_install_autopilot_max_trailing_logs }}
+  server_stabilization_time = "{{ consul_install_autopilot_server_stabilization_time }}"
+}
+
+tls = {
+  defaults = {
+    ca_file = "{{ consul_install_tls_host_certificate_dir }}/{{ consul_install_tls_ca_pubkey }}"
+    cert_file = "{{ consul_install_tls_host_certificate_dir }}/{{ consul_install_tls_cert }}"
+    key_file = "{{ consul_install_tls_host_certificate_dir }}/{{ consul_install_tls_privatekey }}"
+    tls_min_version = "{{ consul_install_tls_tls_min_version }}"
+    verify_incoming = {{ consul_install_tls_verify_incoming }}
+    verify_outgoing = {{ consul_install_tls_verify_outgoing }}
+  }
+
+  grpc = {
+    verify_incoming = false # Workaround https://github.com/hashicorp/consul/issues/16617
+  }
+
+  https = {
+    "verify_incoming" = {{ consul_install_tls_https_verify_incoming | lower }}
+  }
+
+  internal_rpc = {
+    verify_incoming = {{ consul_install_tls_internal_rpc_verify_incoming | lower }}
+    verify_server_hostname = {{ consul_install_tls_internal_rpc_verify_server_hostname | lower }}
+  }
+}
+
+telemetry {
+    prometheus_retention_time = "{{ consul_install_prometheus_retention_time }}"
+}
+
+ui_config = {
+  enabled = {{ consul_install_ui_enabled }}
+}

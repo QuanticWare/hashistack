@@ -1,0 +1,9 @@
+---
+# handlers file for podman
+
+- name: podman_restart
+  ansible.builtin.systemd:
+    name: "podman.service"
+    daemon_reload: true
+    state: "restarted"
+    enabled: true

@@ -1,0 +1,12 @@
+- name: "Nomad operate | Nomad shell command"
+  ansible.builtin.shell: nomad job allocs  -t {% raw %} '{{ range . }}{{ if eq .TaskGroup "{% endraw %}{{ nomad_operate_tasks_name }}{% raw %}" }}{{ println .ID }}{{ end }}{{ end }}' {% endraw %}{{ nomad_operate_job }}{% raw %}  | head -n 1{% endraw %}
+  environment:
+    NOMAD_ADDR: "{{ nomad_http_scheme }}://{{ nomad_http_ip }}:{{ nomad_http_port }}"
+    NOMAD_TOKEN: "{{ nomad_management_token }}"
+    NOMAD_CLIENT_CERT: "{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_cert }}"
+    NOMAD_CLIENT_KEY: "{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_privatekey }}"
+    NOMAD_CACERT: "{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_ca_pubkey }}"
+  register: allocation_id
+
+- debug:
+    msg: "{{ allocation_id.stdout }}"
