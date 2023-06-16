@@ -4,7 +4,7 @@ README
 Configure autounseal
 
 ## How role works (summary)
-Ansible will install ansible on target host and install systemd service that runs at boot to unseal Vault 
+Ansible will install ansible on target host and install systemd service that runs at boot to unseal Vault
 
 &nbsp;
 

@@ -10,10 +10,10 @@ With minimals `SSH` and `Ansible` Knowledges.
 git clone https://github.com/QuanticWare/hashistack.git
 ```
 
-* Adapt variables `project_dir` in `env/group_vars/all.yml` 
-* Rename directory `hosttarget` in `env/host_vars` directory. 
+* Adapt variables `project_dir` in `env/group_vars/all.yml`
+* Rename directory `hosttarget` in `env/host_vars` directory.
 * Update variables in `env/host_vars/$HOSTTARGET/all.yml`
-* Update `env/inventory.ini` 
+* Update `env/inventory.ini`
 * Run `ansible-playbook playbook/hashistack.yml`
 
 After installation. Find all news credentials in `env/host_vars/$HOSTTARGET/hashistack.yml` .
@@ -37,11 +37,11 @@ It's a stack of services developed by [HashiCorp](https://www.hashicorp.com) to 
 
 * [Nomad](https://www.nomadproject.io) : workload orchestrator to deploy and manage
 * [Consul](https://www.consul.io) : like a network directory to connect apps with service mesh
-* [Vault](https://www.vaultproject.io) : secrets manager 
+* [Vault](https://www.vaultproject.io) : secrets manager
 
 ### CAVEAT:
 
-For now, this project is used to install Hashistack in single mode, only on single host, like one VM, one Baremetal etc. Great for home lab and play with Consul, Nomad, Vault. 
+For now, this project is used to install Hashistack in single mode, only on single host, like one VM, one Baremetal etc. Great for home lab and play with Consul, Nomad, Vault.
 
 Cluster mode feature will be added soon (current of this century).
 
@@ -51,7 +51,7 @@ Cluster mode feature will be added soon (current of this century).
 
 * SSH Knowledge
 * Ansible basic install
-* Coffee 
+* Coffee
 
 &nbsp;
 
@@ -67,7 +67,7 @@ Ansible will do for you:
 * Install Vault with ACL/TLS support
 * Install Nomad with ACL/TLS support
 * Configure firewall to open ports 22,80,443
-* Quote a great philosopher 
+* Quote a great philosopher
 
 &nbsp;
 
@@ -109,7 +109,7 @@ Go to `hashistack` directory or open this folder in your [IDE](https://vscodium.
 
 Now you will see a usual ansible tree structure. Read Ansible docs to understand all this structure in detail.
 
-First, you need to configure some variables. Go to `env/group_vars/all.yml` and update it with your local path: 
+First, you need to configure some variables. Go to `env/group_vars/all.yml` and update it with your local path:
 
 ```yml
 project_dir: "~/labo/hashistack"
@@ -129,7 +129,7 @@ Now go to the `playbook` folder, you will find a beautiful and complex playbook:
   hosts: hosttarget
 ```
 
-with the name of your target you will have in the `env/inventory.ini` file. 
+with the name of your target you will have in the `env/inventory.ini` file.
 
 &nbsp;
 
@@ -141,7 +141,7 @@ ansible-playbook playbook/hashistack.yml
 
 Take of coffee and enjoy `Hashistack Install` show in the terminal!
 
-After a few minutes, you will get a good quote of Chuck Norris which means your Hashistack is ready! 
+After a few minutes, you will get a good quote of Chuck Norris which means your Hashistack is ready!
 
 Congrats!
 
@@ -169,7 +169,7 @@ You can modify you SSH config on your Ansible controller, for example, `vim ~/.s
 
 Change `$HOSTTARGET`, `$IP`, `$SSH_PRIVATE_KEY` according to your `env/host_vars/$HOSTTARGET/all.yml`
 
-After save and close, in your terminal, enter: `ssh $HOSTTARGET` and open your prefered [Web Browser](https://www.mozilla.org/fr/firefox/new) and go to `https://127.0.0.1:4646`, you will be warned about self signed certificate, accept and reach the Nomad Web UI! 
+After save and close, in your terminal, enter: `ssh $HOSTTARGET` and open your prefered [Web Browser](https://www.mozilla.org/fr/firefox/new) and go to `https://127.0.0.1:4646`, you will be warned about self signed certificate, accept and reach the Nomad Web UI!
 
 This is another one liner method to do it:
 
@@ -241,7 +241,7 @@ This is mandatory to deploy apps. A reverse proxy will a single HTTP(s) entrypoi
 
 ### Vault Nomad token renew
 
-The `vault_nomad_token` have a limited Time To Live, 32 days maximun. After that, if you restart or run a new job, you will get **failed** status. You can find in `ansible_collections/quanticware/vault/roles/operate` a playbook to renew token automatically. 
+The `vault_nomad_token` have a limited Time To Live, 32 days maximun. After that, if you restart or run a new job, you will get **failed** status. You can find in `ansible_collections/quanticware/vault/roles/operate` a playbook to renew token automatically.
 
 ### Operate
 
@@ -271,7 +271,7 @@ Dans la langue de Molière
 &nbsp;
 
 
-# Installer une HASHISTACK 
+# Installer une HASHISTACK
 
 Bonjour :wave:
 
@@ -280,12 +280,12 @@ Bonjour :wave:
 Il s'agit d'une suite de logiciels développés par [HashiCorp](https://www.hashicorp.com) qui part leur synergie permet le déploiement et la gestion de micro-services dans des contaires. (Une alternative à Kubernetes) à partir de Ubuntu 20.04, mais de préférence Ubuntu 22.04 LTS.
 
 * [Nomad](https://www.nomadproject.io) : Orchestrateur pour déploiement et de maintien en conditions opérationnelles.
-* [Consul](https://www.consul.io) : muti-services comme annuaire de services réseaux, découverte de services, stockage clés/valeurs etc. 
+* [Consul](https://www.consul.io) : muti-services comme annuaire de services réseaux, découverte de services, stockage clés/valeurs etc.
 * [Vault](https://www.vaultproject.io) : gestionnaire de secrets avancé.
 
 ### Avertissement:
 
-Actuellement, l'installation de la Hashistack est limité à un seul hôte, le mode distribué sera développé plus tard, oui, un peu plus tard, durant le siècle actuel promis!  
+Actuellement, l'installation de la Hashistack est limité à un seul hôte, le mode distribué sera développé plus tard, oui, un peu plus tard, durant le siècle actuel promis!
 
 &nbsp;
 
@@ -293,7 +293,7 @@ Actuellement, l'installation de la Hashistack est limité à un seul hôte, le m
 
 * Savoir se servir de SSH
 * Des connaissances basiques de Ansible
-* Du café! (avec ou sans sucre)  
+* Du café! (avec ou sans sucre)
 
 &nbsp;
 
@@ -302,7 +302,7 @@ Actuellement, l'installation de la Hashistack est limité à un seul hôte, le m
 Pour tout fonctionne Ansible va:
 
 * Installer [Docker](https://www.docker.com) (activé par défaut)
-* Installer [CNI](https://github.com/containernetworking/cni) pour le réseau des containers 
+* Installer [CNI](https://github.com/containernetworking/cni) pour le réseau des containers
 * Installer [Podman](https://podman.io) (désactivé par défaut)
 * Créer une Autorité de Certificat (CA) sur le contrôlleur Ansible pour générer les certificats TLS
 * Installer Consul avec le support des ACL/TLS
@@ -351,9 +351,9 @@ Allez dans le répertoire `hashistack` avec l'explorateur ou ouvrez-le avec votr
 
 Vous allez y découvrir une aborescence standard d'un projet Ansible. Lisez la doc d'Ansible pour mieux comprendre en détails.
 
-Dans un premier temps, vous allez devoir configurer quelques variables. 
+Dans un premier temps, vous allez devoir configurer quelques variables.
 
-Dans `env/group_vars/all.yml` changez cette variable avec le chemin local: 
+Dans `env/group_vars/all.yml` changez cette variable avec le chemin local:
 
 ```yml
 project_dir: "~/labo/hashistack"
@@ -361,7 +361,7 @@ project_dir: "~/labo/hashistack"
 
 &nbsp;
 
-Maintenant dans le répertoire `env/host_vars`. Vous allez voir un répertoire nommé `hosttarget`, vous pouvez le renommer avec un nom qui sera plus en adéquation avec votre infrastructure. 
+Maintenant dans le répertoire `env/host_vars`. Vous allez voir un répertoire nommé `hosttarget`, vous pouvez le renommer avec un nom qui sera plus en adéquation avec votre infrastructure.
 
 Mettez à jour `$IP`, `$USER`, `Port` dans `all.yml` avec le compte unix SSH configuré sur l'hôte cible.
 Mettez à jour dans `env/inventory.ini`, changez `hosttarget`par le nom du répertoire dans `env/host_vars` que vous avez changé précédement.
@@ -374,7 +374,7 @@ Maintenant dans le répertoire `playbook`, vous trouverez un beau et complexe pl
   hosts: hosttarget
 ```
 
-avec le nom que vous avez configuré dans `env/inventory.ini`. 
+avec le nom que vous avez configuré dans `env/inventory.ini`.
 
 &nbsp;
 
@@ -414,7 +414,7 @@ Vous pouvez modifier sur votre contrôleur Ansible, par exemple `vim ~/.ssh/conf
 
 Changez `$HOSTTARGET`, `$IP`, `$SSH_PRIVATE_KEY` par rapport à vos modifications dans `env/host_vars/$HOSTTARGET/all.yml`
 
-Sauvegardez, fermez et dans votre terminal, tapez: `ssh $HOSTTARGET`, une fois la connexion SSH établie ouvrez votre navigateur préféré [Web Browser](https://www.mozilla.org/fr/firefox/new) et allez sur `https://127.0.0.1:4646`, vous allez voir un avertissement à propos d'un certificat auto-signé, acceptez pour accéder à l'interface web de Nomad! 
+Sauvegardez, fermez et dans votre terminal, tapez: `ssh $HOSTTARGET`, une fois la connexion SSH établie ouvrez votre navigateur préféré [Web Browser](https://www.mozilla.org/fr/firefox/new) et allez sur `https://127.0.0.1:4646`, vous allez voir un avertissement à propos d'un certificat auto-signé, acceptez pour accéder à l'interface web de Nomad!
 
 Ou part cette commande SSH, qui est équivalente:
 
@@ -426,7 +426,7 @@ ssh -i ~/.ssh/$SSH_PRIVATE_KEY $USER@$HOSTTARGET -L 4646:127.0.0.1:4646 -L 8501:
 
 ## Comment s'authentifier dans les composants de la Hashistack?
 
-Quand vous êtes sur une interface web, par example Nomad, en haut à droite, cliquez sur `sign in` et sur la page suivante, vous sera demandé une clé, Mais où ma trouve-t-on me direz-vous? Tout simplement dans`env/host_vars/$HOSTTARGET/hashistack.yml` qui est apparu par magie durant l'installation de la Hashistack, vous y trouverez les identifiants nécessaires pour chaque composant de la Hashistack.  
+Quand vous êtes sur une interface web, par example Nomad, en haut à droite, cliquez sur `sign in` et sur la page suivante, vous sera demandé une clé, Mais où ma trouve-t-on me direz-vous? Tout simplement dans`env/host_vars/$HOSTTARGET/hashistack.yml` qui est apparu par magie durant l'installation de la Hashistack, vous y trouverez les identifiants nécessaires pour chaque composant de la Hashistack.
 
 &nbsp;
 
