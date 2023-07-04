@@ -51,6 +51,6 @@
   community.crypto.x509_certificate_info:
     path: "{{ hashistack_install_tls_host_certificate_dir }}/{{ hashistack_install_tls_ca_pubkey }}"
     valid_at:
-      delay: "{{ consul_install_tls_check_delay }}"
+      delay: "{{ hashistack_install_tls_check_delay }}"
   register: tls_check
   when: cert_ca_tls_present.stat.exists == true
