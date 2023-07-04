@@ -21,6 +21,7 @@ hashistack_install_tls_ca_pubkey: "hashistack-ca.pem"
 hashistack_install_tls_ca_privatekey: "hashistack-ca-key.pem"
 hashistack_install_tls_host_certificate_dir: "/etc/ssl/hashistack"
 hashistack_install_tls_common_name: "hashistack"
+hashistack_install_tls_check_delay: "+2w"
 
 # Nomad
 nomad_docker_driver: true
