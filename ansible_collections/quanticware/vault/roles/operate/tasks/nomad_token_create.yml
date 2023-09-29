@@ -11,8 +11,8 @@
       {
         "role_name": "{{ token_role_name }}",
         "policies": [{% for item in vault_policies %}"{{ item }}"{% if not loop.last %},{% endif %}{% endfor %}],
-        "ttl": "{{ token_ttl }}",
-        "renewable": true
+        "renewable": true,
+        "period": "{{ token_ttl }}"
       }
     body_format: json
     status_code:

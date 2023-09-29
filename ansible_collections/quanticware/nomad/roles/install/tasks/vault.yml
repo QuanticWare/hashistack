@@ -14,7 +14,7 @@
     tasks_from: create_policy
   vars:
     vault_policy_name: "access-creds"
-    vault_policy_rules: 'path \"database/*\" {\n  capabilities = [\"list\", \"read\", \"create\", \"update\"]\n}\npath \"env/*\" {\n  capabilities = [\"list\", \"read\", \"create\", \"update\"]\n}\npath \"apps/*\" {\n  capabilities = [\"list\", \"read\", \"create\", \"update\"]\n}\n'
+    vault_policy_rules: 'path \"env/*\" {\n  capabilities = [\"list\", \"read\", \"create\", \"update\"]\n}\npath \"apps/*\" {\n  capabilities = [\"list\", \"read\", \"create\", \"update\"]\n}\n'
 
 - name: "Nomad | Vault Policies | Create Roles for Nomad-Cluster"
   ansible.builtin.import_role:

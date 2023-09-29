@@ -12,7 +12,8 @@
         {
           "policies": {{ vault_policies | to_json }},
           "no_parent": "true",
-          "renewable": "true"
+          "renewable": "true",
+          "period": "{{ token_ttl }}"
         }
     body_format: json
     status_code:
@@ -22,5 +23,3 @@
 
 - ansible.builtin.debug:
     msg: "{{ vault_new_token_result.json.auth.client_token }}"
-
-         # "policies": [{% for item in vault_policies_list %}"{{ item }}"{% if not loop.last %},{% endif %}{% endfor %}],
