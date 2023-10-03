@@ -24,6 +24,12 @@
     owner: "vault"
     group: "vault"
 
+- name: "Vault Install | Add consul.service wait to the systemd unit file"
+  ansible.builtin.lineinfile:
+    path: /lib/systemd/system/vault.service
+    regexp: "^After=network-online.target"
+    line: "After=network-online.target consul.service"
+
 - name: "Vault Install | Start Vault"
   ansible.builtin.systemd:
     state: restarted

@@ -8,5 +8,5 @@ check_online_version: true
 
 vault_version: 1.13
 
-standard_path: "/usr/local/bin"
-vault_path: "{{ standard_path }}"
+binary_path: "/usr/bin"
+vault_path: "{{ binary_path }}"

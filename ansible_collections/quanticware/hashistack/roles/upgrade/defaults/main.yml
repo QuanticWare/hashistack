@@ -16,7 +16,7 @@ vault_upgrade: True
 #nomad_version: 1.3.2
 nomad_upgrade: True
 
-binary_path: "/usr/local/bin"
+binary_path: "/usr/bin"
 consul_path: "{{ binary_path }}"
 vault_path: "{{ binary_path }}"
 nomad_path: "{{ binary_path }}"
