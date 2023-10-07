@@ -1,6 +1,11 @@
 ---
 # tasks file for upgrade
 
+- name: "Consul Upgrade | Install requiered binary"
+  ansible.builtin.apt:
+    name: unzip
+    update_cache: yes
+
 - name: "Check Consul latest version online"
   block:
     - name: Consul | Retrieve brut list from hashicorp.com

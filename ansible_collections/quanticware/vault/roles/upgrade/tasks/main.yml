@@ -1,6 +1,11 @@
 ---
 # tasks file for upgrade
 
+- name: "Nomad Upgrade | Install requiered binary"
+  ansible.builtin.apt:
+    name: unzip
+    update_cache: yes
+
 - name: Check vault latest version online
   block:
     - name: Vault | Retrieve brut list from hashicorp.com
