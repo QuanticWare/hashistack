@@ -62,7 +62,6 @@
     - docker-ce-cli
     - containerd.io
     - docker-compose
-  notify: docker enable
 
 - name: "Docker Install | Pip packages"
   ansible.builtin.pip:
@@ -85,3 +84,9 @@
     password: "{{ docker_private_registry_creds.password }}"
     reauthorize: true
   when: docker_private_registry_state == true
+
+- name: "Docker Install | Systemd start and enable"
+  ansible.builtin.systemd:
+    state: started
+    name: docker
+    enabled: yes

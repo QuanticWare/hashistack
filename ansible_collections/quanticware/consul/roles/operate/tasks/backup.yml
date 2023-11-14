@@ -1,0 +1,18 @@
+---
+- name: "Consul | Backup | Create backup dir"
+  ansible.builtin.file:
+    path: "{{ consul_config_dir }}/backup"
+    state: directory
+    mode: '0755'
+
+- name: "Consul | Backup | Generate backup"
+  ansible.builtin.shell: "consul snapshot save {{ consul_backup_basename }}.snap"
+  args:
+    chdir: "{{ consul_config_dir }}/backup"
+  environment:
+    CONSUL_HTTP_ADDR: "{{ consul_http_ip }}:{{ consul_http_port }}"
+    CONSUL_HTTP_SSL: true
+    CONSUL_HTTP_TOKEN: "{{ consul_acl_master_token }}"
+    CONSUL_CACERT: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_ca_pubkey }}"
+    CONSUL_CLIENT_CERT: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_cert }}"
+    CONSUL_CLIENT_KEY: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_privatekey }}"

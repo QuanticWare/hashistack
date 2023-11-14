@@ -7,9 +7,15 @@ consul_http_ip: "127.0.0.1"
 consul_http_port: "8501"
 
 check_online_version: true
-consul_config_file: "/etc/consul/config.json"
+consul_config_file: "/etc/consul.d/config.json"
+consul_config_dir: "/etc/consul.d"
 
 consul_operate_dc_name: "dc1"
+
+consul_version: 1.16.2
+
+binary_path: "/usr/bin"
+consul_path: "{{ binary_path }}"
 
 # TLS
 consul_operate_tls_ca_host: localhost
@@ -25,6 +31,9 @@ consul_operate_tls_privatekey: "{{ consul_operate_dc_name }}-server-consul.key"
 
 consul_operate_tls_common_name: "*.{{ consul_operate_dc_name }}.consul"
 consul_operate_tls_subject_alt_name: "DNS:localhost,IP:127.0.0.1,DNS:server.dc1.consul"
+
+# Backup
+consul_backup_basename: "consul_{{ inventory_hostname | replace('.', '_') }}_{{ ansible_date_time.date }}"
 
 # Service
 fqdn: "hostname.com"

@@ -1,0 +1,17 @@
+---
+- name: "Nomad | Backup | Create backup dir"
+  ansible.builtin.file:
+    path: "{{ nomad_conf_dir }}/backup"
+    state: directory
+    mode: '0755'
+
+- name: "Nomad | Backup | Generate backup"
+  ansible.builtin.shell: "nomad operator snapshot save {{ nomad_backup_basename }}.snap"
+  args:
+    chdir: "{{ nomad_conf_dir }}/backup"
+  environment:
+    NOMAD_ADDR: "{{ nomad_http_scheme }}://{{ nomad_http_ip }}:{{ nomad_http_port }}"
+    NOMAD_TOKEN: "{{ nomad_management_token }}"
+    NOMAD_CACERT: "{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_ca_pubkey }}"
+    NOMAD_CLIENT_CERT: "{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_cert }}"
+    NOMAD_CLIENT_KEY: "{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_privatekey }}"

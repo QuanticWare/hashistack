@@ -37,7 +37,7 @@ group_01_image: "registry.quanticware.com/quanticware/ansible-tasker"
 
 group_01_volumes_state: true
 group_01_volumes:
-  - { type: "bind", target: "/etc/ssl/hashistack", source: "/etc/ssl/hashistack", readonly: "false", propagation: "rshared" }
+  - { type: "bind", target: "/etc/ssl/hashistack", source: "/etc/ssl/hashistack", readonly: "true", propagation: "rshared" }
 
 ## Traefik info
 group_01_service_name: "{{ fqdn | replace('-', '') | replace('.', '') }}"

@@ -36,3 +36,7 @@
 
 - name: "Nomad | ACL Configuration"
   ansible.builtin.include_tasks: "acl.yml"
+
+- name: "Nomad | Install Nomad Auto Eligibility Node"
+  ansible.builtin.import_role:
+    name: quanticware.nomad.autoeligibility

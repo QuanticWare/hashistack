@@ -2,9 +2,12 @@
 # defaults file for operate
 
 # General
-vault_http_scheme: "https"
+vault_http_scheme: "{% if vault_unsecure == false %}https{% else %}http{% endif %}"
 vault_http_ip: "127.0.0.1"
 vault_http_port: 8200
+vault_unsecure: false
+vault_conf_dir: "/etc/vault.d"
+vault_consul_backend: true
 
 vault_operate_log_level: info
 vault_operate_prometheus_retention_time: "24h"
@@ -12,6 +15,11 @@ vault_operate_prometheus_retention_time: "24h"
 check_online_version: true
 
 vault_operate_dc_name: "dc1"
+
+vault_version: 1.15.1
+
+binary_path: "/usr/bin"
+vault_path: "{{ binary_path }}"
 
 #vault_url: "http://127.0.0.1:8200"
 vault_root_token: ""
@@ -57,3 +65,14 @@ vault_kv_name: "apps"
 # vault_token_renew_token:
 vault_token_renew_ttl: "768h"
 vault_token_renew_self: true
+
+# Backup
+vault_backup_basename: "vault_{{ inventory_hostname | replace('.', '_') }}_{{ ansible_date_time.date }}"
+
+consul_operate_tls_host_certificate_dir: "/etc/ssl/hashistack"
+
+vault_consul_backend_http_scheme: "https"
+vault_consul_backend_http_ip: "127.0.0.1"
+vault_consul_backend_http_port: 8501
+vault_consul_backend_tls_cert: "{{ vault_operate_dc_name }}-server-consul.pem"
+vault_consul_backend_tls_privatekey: "{{ vault_operate_dc_name }}-server-consul.key"

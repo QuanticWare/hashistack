@@ -5,6 +5,7 @@ role_user: root
 install_method: nomad
 fqdn: "{{ app_name }}"
 http_scheme: http
+nomad_job_files_dir: "/var/tmp/hashistack/nomad"
 
 # Ansible
 deploy_credentials: true
@@ -13,7 +14,7 @@ deploy_posttasks: false
 
 # Vault autorenew specs
 # General
-vault_http_scheme: "https"
+vault_http_scheme: "{% if vault_unsecure == false %}https{% else %}http{% endif %}"
 vault_http_ip: "{{ docker_gateway }}"
 vault_http_port: 8200
 vault_operate_dc_name: "dc1"
@@ -47,11 +48,16 @@ nomad_http_auth: true
 nomad_job_specs_datacenter: "dc1"
 nomad_job_specs_region: "global"
 
+nomad_job_node_pool: "default"
+nomad_job_priority: 50
+nomad_job_all_at_once: "false"
+nomad_job_namespace: "default"
+
 nomad_job_constraint_node_unique_name: False
 
 nomad_periodic_state: true
 nomad_periodic:
-  cron: "0 0 5 * *"
+  cron: "0 1 5 * *"
   prohibit_overlap: "true"
   timezone: "Europe/Paris"
 

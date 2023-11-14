@@ -1,0 +1,34 @@
+---
+# tasks file for backup
+
+- name: "Nomad Auto Eligibility | Install pip module"
+  ansible.builtin.pip:
+    name: "{{ item }}"
+  loop:
+  - ansible
+
+- name: "Nomad Auto Eligibility | Copy auto-autoeligibility playbook"
+  ansible.builtin.template:
+    src: "nomad_autoeligibility.yml.j2"
+    dest: "/root/nomad_autoeligibility.yml"
+    mode: "0644"
+
+- name: "Nomad Auto Eligibility | Copy service systemd file"
+  copy:
+    src: nomad-autoeligibility.service
+    dest: /lib/systemd/system/nomad-autoeligibility.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: "Nomad Auto Eligibility | Add nomad-autoeligibility.service wait to Nomad the systemd unit file"
+  ansible.builtin.lineinfile:
+    path: /lib/systemd/system/nomad.service
+    regexp: "^Wants=network-online.target"
+    line: "Wants=network-online.target nomad-autoeligibility.service"
+
+- name: "Nomad Auto Eligibility | Register systemd service"
+  ansible.builtin.systemd:
+    name: nomad-autoeligibility.service
+    enabled: true
+    daemon_reload: true

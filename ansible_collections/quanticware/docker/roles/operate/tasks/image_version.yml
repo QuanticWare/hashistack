@@ -1,0 +1,15 @@
+- name: "Docker Operate | Pull image"
+  community.docker.docker_image:
+    name: "{{ docker_operate_image }}"
+    source: pull
+
+- name: "Docker Operate | Get infos from image"
+  community.docker.docker_image_info:
+    name: "{{ docker_operate_image }}"
+  register: docker_info
+
+- set_fact:
+    docker_image_version: "{{ docker_info.images[0].Config.Labels['org.opencontainers.image.version'] }}"
+
+- debug:
+    msg: "{{ docker_image_version }}"

@@ -5,7 +5,10 @@
 nomad_http_scheme: "https"
 nomad_http_ip: "127.0.0.1"
 nomad_http_port: 4646
-nomad_job_files_dir: "/var/tmp"
+nomad_job_files_dir: "/var/tmp/hashistack/nomad"
+nomad_job_file: "{{ nomad_job_files_dir }}/{{ job_name }}.hcl"
+nomad_job_name: "{{ fqdn }}"
+nomad_conf_dir: "/etc/nomad.d"
 
 nomad_operate_log_level: info
 nomad_operate_prometheus_retention_time: "24h"
@@ -13,6 +16,13 @@ nomad_operate_prometheus_retention_time: "24h"
 check_online_version: true
 
 nomad_operate_dc_name: "dc1"
+
+nomad_unsecure: false
+
+nomad_version: 1.6.2
+
+binary_path: "/usr/bin"
+nomad_path: "{{ binary_path }}"
 
 # TLS
 nomad_operate_tls_ca_host: localhost
@@ -25,3 +35,6 @@ nomad_operate_tls_host_certificate_dir: "/etc/ssl/hashistack"
 
 nomad_operate_tls_cert: "{{ nomad_operate_dc_name }}-server-nomad.pem"
 nomad_operate_tls_privatekey: "{{ nomad_operate_dc_name }}-server-nomad.key"
+
+# Backup
+nomad_backup_basename: "nomad_{{ inventory_hostname | replace('.', '_') }}_{{ ansible_date_time.date }}"

@@ -7,10 +7,12 @@
     vault_http_scheme: {{ vault_http_scheme }}
     vault_http_ip: {{ vault_http_ip }}
     vault_http_port: {{ vault_http_port }}
+{% if vault_unsecure == false %}
     vault_operate_tls_host_certificate_dir: {{ vault_operate_tls_host_certificate_dir }}
     vault_operate_tls_ca_pubkey: {{ vault_operate_tls_ca_pubkey }}
     vault_operate_tls_cert: {{ vault_operate_tls_cert }}
     vault_operate_tls_privatekey: {{ vault_operate_tls_privatekey }}
+{% endif %}
     vault_token_renew_ttl: {{ vault_token_renew_ttl }}
     vault_token_renew_self: {{ vault_token_renew_self }}
 {% raw %}
@@ -18,9 +20,15 @@
   - name: Vault Token | Renew a token
     ansible.builtin.uri:
       url: "{{`{{ vault_http_scheme }}`}}://{{`{{ vault_http_ip }}`}}:{{`{{ vault_http_port }}`}}/v1/auth/token/renew"
+{% endraw %}
+{% if vault_unsecure == false %}
+{% raw %}
       ca_path: "{{`{{ vault_operate_tls_host_certificate_dir }}`}}/{{`{{ vault_operate_tls_ca_pubkey }}`}}"
       client_cert: "{{`{{ vault_operate_tls_host_certificate_dir }}`}}/{{`{{ vault_operate_tls_cert }}`}}"
       client_key: "{{`{{ vault_operate_tls_host_certificate_dir }}`}}/{{`{{ vault_operate_tls_privatekey }}`}}"
+{% endraw %}
+{% endif %}
+{% raw %}
       method: POST
       headers:
         X-Vault-Token: "{{`{{ lookup('ansible.builtin.env', 'VAULT_ROOT_TOKEN') }}`}}"
@@ -37,9 +45,15 @@
   - name: Vault Token | Renew a token self
     ansible.builtin.uri:
       url: "{{`{{ vault_http_scheme }}`}}://{{`{{ vault_http_ip }}`}}:{{`{{ vault_http_port }}`}}/v1/auth/token/renew-self"
+{% endraw %}
+{% if vault_unsecure == false %}
+{% raw %}
       ca_path: "{{`{{ vault_operate_tls_host_certificate_dir }}`}}/{{`{{ vault_operate_tls_ca_pubkey }}`}}"
       client_cert: "{{`{{ vault_operate_tls_host_certificate_dir }}`}}/{{`{{ vault_operate_tls_cert }}`}}"
       client_key: "{{`{{ vault_operate_tls_host_certificate_dir }}`}}/{{`{{ vault_operate_tls_privatekey }}`}}"
+{% endraw %}
+{% endif %}
+{% raw %}
       method: POST
       headers:
         X-Vault-Token: "{{`{{ lookup('ansible.builtin.env', 'VAULT_TOKEN') }}`}}"

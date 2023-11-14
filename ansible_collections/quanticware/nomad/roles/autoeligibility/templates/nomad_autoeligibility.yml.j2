@@ -1,0 +1,17 @@
+- name: Nomad Auto Eligibility Node
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Gather facts to set eligibility
+      ansible.builtin.setup:
+        filter: ansible_local
+
+    - name: "Nomad | Set Eligibility of node"
+      ansible.builtin.shell: nomad node eligibility -enable -self
+      environment:
+        NOMAD_ADDR: "{{ nomad_install_http_scheme }}://{{ nomad_install_http_ip }}:{{ nomad_install_http_port }}"
+        NOMAD_TOKEN: "{% raw %}{{ ansible_local.nomad_management_token.nomad_management_token }}{% endraw %}"
+        NOMAD_CACERT: "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_ca_pubkey }}"
+        NOMAD_CLIENT_CERT: "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_cert }}"
+        NOMAD_CLIENT_KEY: "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_privatekey }}"

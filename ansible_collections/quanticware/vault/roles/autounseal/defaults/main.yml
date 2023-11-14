@@ -12,6 +12,7 @@ vault_install_http_port: 8200
 
 vault_install_dc_name: "dc1"
 
+vault_install_tls_host_certificate_dir: "/etc/ssl/hashistack"
 vault_install_tls_ca_pubkey: "hashistack-ca.pem"
 vault_install_tls_cert: "{{ vault_install_dc_name }}-server-vault.pem"
 vault_install_tls_privatekey: "{{ vault_install_dc_name }}-server-vault.key"

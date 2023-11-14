@@ -21,11 +21,11 @@
     group: root
     mode: '0644'
 
-- name: "Vault Unseal | Register systemd service"
-  ansible.builtin.systemd:
-    name: vault-unseal.service
-    enabled: true
-    daemon_reload: true
+- name: "Vault Unseal | Add vault-unseal.service to Wants of Vault systemd unit file"
+  ansible.builtin.lineinfile:
+    path: /lib/systemd/system/vault.service
+    insertafter: 'Requires=network-online.target'
+    line: 'Wants=vault-unseal.service'
 
 - name: "Vault Unseal | Check if Nomad binary exists"
   ansible.builtin.stat:
@@ -38,3 +38,9 @@
     regexp: "^After=network-online.target"
     line: "After=network-online.target vault-unseal.service"
   when: nomad_binary.stat.exists == true
+
+- name: "Vault Unseal | Register systemd service"
+  ansible.builtin.systemd:
+    name: vault-unseal.service
+    enabled: true
+    daemon_reload: true

@@ -17,6 +17,7 @@ plugin "docker" {
         volumes {
             enabled = {{ nomad_install_docker_volume_enable }}
         }
+        allow_caps = [{% for item in nomad_install_docker_client_allow_caps %}"{{ item }}"{% if not loop.last %}, {% endif %}{% endfor %}]
 
         gc {
         image       = {{ nomad_install_docker_gc_image }}

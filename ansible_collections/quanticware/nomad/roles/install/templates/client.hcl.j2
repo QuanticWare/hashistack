@@ -1,0 +1,36 @@
+client {
+    enabled = {{ nomad_install_client_enabled }}
+
+    node_class = ""
+    no_host_uuid = {{ nomad_install_client_no_host_uuid }}
+
+    servers = [{% for item in nomad_install_client_servers %}"{{ item }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+
+    server_join {
+      retry_join = [ {% for item in nomad_install_client_server_join %}"{{ item }}"{% if not loop.last %}, {% endif %}{% endfor %} ]
+      retry_max = {{ nomad_install_client_server_join_retry_max }}
+      retry_interval = "{{ nomad_install_client_server_join_retry_interval }}"
+    }
+
+    drain_on_shutdown {
+      deadline           = "{{ nomad_install_client_drain_on_shutdown_deadline }}"
+      force              = {{ nomad_install_client_drain_on_shutdown_force }}
+      ignore_system_jobs = {{ nomad_install_client_drain_on_shutdown_ignore_system_jobs }}
+    }
+
+    max_kill_timeout = "{{ nomad_install_client_max_kill_timeout }}"
+
+    network_speed = {{ nomad_install_client_network_speed }}
+    cpu_total_compute = {{ nomad_install_client_cpu_total_compute }}
+
+    gc_interval = "{{ nomad_install_client_gc_interval }}"
+    gc_disk_usage_threshold = {{ nomad_install_client_gc_disk_usage_threshold }}
+    gc_inode_usage_threshold = {{ nomad_install_client_gc_inode_usage_threshold }}
+    gc_parallel_destroys = {{ nomad_install_client_gc_parallel_destroys }}
+
+    reserved {
+        cpu = {{ nomad_install_client_reserved_cpu }}
+        memory = {{ nomad_install_client_reserved_memory }}
+        disk = {{ nomad_install_client_reserved_disk }}
+    }
+}

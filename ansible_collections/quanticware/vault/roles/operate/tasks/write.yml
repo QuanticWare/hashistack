@@ -1,4 +1,4 @@
-- name: Vault Write | Write secret
+- name: "Vault Write | Write secret (secure)"
   ansible.builtin.uri:
     url: "{{ vault_http_scheme }}://{{ vault_http_ip }}:{{ vault_http_port }}/v1/{{ vault_secret_path }}"
     ca_path: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_ca_pubkey }}"
@@ -11,4 +11,18 @@
     body_format: json
     status_code:
         - 200
-  #no_log: true
+  when: vault_unsecure == false
+  no_log: true
+
+- name: "Vault Write | Write secret (unsecure)"
+  ansible.builtin.uri:
+    url: "http://{{ vault_http_ip }}:{{ vault_http_port }}/v1/{{ vault_secret_path }}"
+    method: POST
+    headers:
+        X-Vault-Token: "{{ vault_root_token }}"
+    body: "{{ vault_secret | to_nice_json}}"
+    body_format: json
+    status_code:
+        - 200
+  when: vault_unsecure == true
+  no_log: true

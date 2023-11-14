@@ -1,0 +1,17 @@
+- name: "Consul Operate | Create intention from {{ consul_intentions_source }} to {{ consul_intentions_destination }}"
+  ansible.builtin.uri:
+    url: "{{ consul_http_scheme }}://{{ consul_http_ip }}:{{ consul_http_port }}/v1/connect/intentions/exact?source={{ consul_intentions_source }}&destination={{ consul_intentions_destination }}"
+    ca_path: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_ca_pubkey }}"
+    client_cert: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_cert }}"
+    client_key: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_privatekey }}"
+    method: PUT
+    body_format: json
+    body: |
+        {
+          "SourceType": "consul",
+          "Action": "allow"
+        }
+    headers:
+      X-Consul-Token: "{{ consul_acl_master_token | default(consul_master_token) }}"
+    status_code:
+        - 200

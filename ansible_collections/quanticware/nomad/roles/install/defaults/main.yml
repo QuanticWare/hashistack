@@ -15,14 +15,14 @@ nomad_config_dir: "/etc/nomad.d"
 nomad_config_file: "nomad.hcl"
 nomad_bin_dir: "/usr/bin"
 nomad_install_data_dir: "/opt/nomad"
-nomad_job_files_dir: "/var/tmp"
+nomad_job_files_dir: "/var/tmp/hashistack/nomad"
 
 nomad_install_dc_name: "dc1"
 
 nomad_install_disable_update_check: "false"
 
 nomad_install_leave_on_terminate: true
-nomad_install_leave_on_interrupt: false
+nomad_install_leave_on_interrupt: true
 
 # Log
 nomad_install_debug: "false"
@@ -39,6 +39,8 @@ nomad_raw_exec_driver: false
 podman_rootless: true
 
 # Docker
+docker_tls_configuration: false
+
 nomad_install_docker_client_dc_name: "dc1"
 
 nomad_install_docker_tcp_listen_address: "127.0.0.1"
@@ -48,6 +50,23 @@ nomad_install_docker_client_tls_host_certificate_dir: "/etc/ssl/docker"
 nomad_install_docker_client_tls_cert: "{{ nomad_install_docker_client_dc_name }}-client-docker.pem"
 nomad_install_docker_client_tls_privatekey: "{{ nomad_install_docker_client_dc_name }}-client-docker.key"
 nomad_install_docker_client_tls_ca_pubkey: "docker-ca.pem"
+
+nomad_install_docker_client_allow_caps:
+- audit_write
+- chown
+- dac_override
+- fowner
+- fsetid
+- kill
+- mknod
+- net_bind_service
+- setfcap
+- setgid
+- setpcap
+- setuid
+- sys_chroot
+- sys_ptrace
+- sys_admin
 
 # Addresses
 nomad_iface: "{{ ansible_default_ipv4.interface }}"
@@ -90,9 +109,20 @@ nomad_install_client_enabled: "true"
 
 #nomad_install_client_node_class: ""
 nomad_install_client_no_host_uuid: "false"
-
-
 nomad_install_client_max_kill_timeout: "30s"
+
+nomad_install_client_servers:
+- 127.0.0.1:4647
+
+nomad_install_client_server_join:
+- 127.0.0.1
+
+nomad_install_client_server_join_retry_max: 3
+nomad_install_client_server_join_retry_interval: "15s"
+
+nomad_install_client_drain_on_shutdown_deadline: "1m"
+nomad_install_client_drain_on_shutdown_force: "true"
+nomad_install_client_drain_on_shutdown_ignore_system_jobs: "true"
 
 nomad_install_client_network_speed: 0
 nomad_install_client_cpu_total_compute: 0
@@ -217,3 +247,20 @@ nomad_install_autopilot_cleanup_dead_servers: "true"
 nomad_install_autopilot_last_contact_threshold: "200ms"
 nomad_install_autopilot_max_trailing_logs: 250
 nomad_install_autopilot_server_stabilization_time: "10s"
+
+# UI
+nomad_install_ui_enabled: "true"
+nomad_install_ui_content_security_policy_connect_src: "*"
+nomad_install_ui_content_security_policy_default_src: "'none'"
+nomad_install_ui_content_security_policy_form_action: "'none'"
+nomad_install_ui_content_security_policy_frame_ancestors: "'none'"
+nomad_install_ui_content_security_policy_img_src: ""
+nomad_install_ui_content_security_policy_script_src: "'self'"
+nomad_install_ui_content_security_policy_style_src: ""
+
+nomad_install_ui_consul_ui_url: "https://127.0.0.1:8501/ui"
+nomad_install_ui_vault_ui_url: "https://127.0.0.1:8200/ui"
+
+nomad_install_ui_label_text: "{{ inventory_hostname }}"
+nomad_install_ui_label_background_color: "blue"
+nomad_install_ui_label_text_color: "white"

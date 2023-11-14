@@ -30,13 +30,18 @@
       mode: "0600"
   when: ansible_local.nomad_encrypt_key.nomad_encrypt_key is not defined
 
-- name: "Nomad Install | Copy config file"
+- name: "Nomad Install | Copy configurations files"
   ansible.builtin.template:
-    src: "nomad.hcl.j2"
-    dest: "{{ nomad_config_dir }}/nomad.hcl"
+    src: "{{ item.src }}"
+    dest: "{{ nomad_config_dir }}/{{ item.dest }}"
     owner: nomad
     group: nomad
     mode: '0644'
+  loop:
+  - { src: "nomad.hcl.j2", dest: "nomad.hcl" }
+  - { src: "consul.hcl.j2", dest: "consul.hcl" }
+  - { src: "server.hcl.j2", dest: "server.hcl" }
+  - { src: "client.hcl.j2", dest: "client.hcl" }
 
 - name: "Nomad Install | Create Nomad logs directory"
   ansible.builtin.file:
