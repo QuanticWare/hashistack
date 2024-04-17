@@ -1,7 +1,6 @@
 - name: "Docker Install | Mandatories packages"
-  ansible.builtin.apt:
-    pkg: "{{ item }}"
-    force_apt_get: yes
+  ansible.builtin.package:
+    name: "{{ item }}"
     state: present
   loop:
     - apt-transport-https
@@ -12,38 +11,26 @@
     - python3-pip
     - lsb-release
 
-- name: "Docker Install | Block for ARM64"
-  block:
-    - name: "Docker Install | Add repository key"
-      ansible.builtin.apt_key:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        keyring: /usr/share/keyrings/docker-archive-keyring.gpg
-        state: present
+- name: "Docker Install | Add repository"
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: [deb]
+    uris: "https://download.docker.com/linux/{{ ansible_distribution | lower }}"
+    signed_by: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+    suites: ["{{ ansible_distribution_release | lower }}"]
+    components: [stable]
+    state: present
+    enabled: yes
+  register: docker_add_repo
 
-    - name: "Docker Install | Add repository"
-      ansible.builtin.apt_repository:
-        repo: deb [arch=arm64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/{{ ansible_distribution | lower  }}  {{ ansible_distribution_release }} stable
-        state: present
-  when: ansible_architecture == "aarch64"
-
-- name: "Docker Install | Block for AMD64"
-  block:
-    - name: "Docker Install | Add repository key"
-      ansible.builtin.apt_key:
-        id: 0EBFCD88
-        url: https://download.docker.com/linux/ubuntu/gpg
-        state: present
-
-    - name: "Docker Install | Add repository"
-      ansible.builtin.apt_repository:
-        repo: deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower  }} {{ ansible_distribution_release }} stable
-        state: present
-  when: ansible_architecture != "aarch64"
+- name: "Docker Install | Apt Update"
+  ansible.builtin.apt:
+    update_cache: yes
+  when: docker_add_repo.changed
 
 - name: "Docker Install | Uninstall OS defaults Docker packages"
-  ansible.builtin.apt:
-    pkg: "{{ item }}"
-    force_apt_get: yes
+  ansible.builtin.package:
+    name: "{{ item }}"
     state: absent
   loop:
     - docker
@@ -53,9 +40,8 @@
     - runc
 
 - name: "Docker Install | Install Docker packages from official repository"
-  ansible.builtin.apt:
-    pkg: "{{ item }}"
-    force_apt_get: yes
+  ansible.builtin.package:
+    name: "{{ item }}"
     state: present
   loop:
     - docker-ce
@@ -65,11 +51,8 @@
 
 - name: "Docker Install | Pip packages"
   ansible.builtin.pip:
-    name: "{{ item }}"
+    name: "docker"
     state: present
-  loop:
-    - docker
-    - docker-compose
 
 - name: "Docker Install | Add user to docker group"
   ansible.builtin.user:
@@ -79,9 +62,9 @@
 
 - name: "Docker Install | Log into private registry and force re-authorization"
   community.docker.docker_login:
-    registry_url: "{{ docker_private_registry_creds.url }}"
-    username: "{{ docker_private_registry_creds.username }}"
-    password: "{{ docker_private_registry_creds.password }}"
+    registry_url: "{{ docker_private_registry_url }}"
+    username: "{{ docker_private_registry_username }}"
+    password: "{{ docker_private_registry_password }}"
     reauthorize: true
   when: docker_private_registry_state == true
 

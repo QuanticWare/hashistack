@@ -45,7 +45,7 @@
       when: ansible_architecture == "x86_64"
 
     - name: "Nomad | Upgrade | Restart Nomad"
-      ansible.builtin.systemd:
+      ansible.builtin.systemd_service:
         name: nomad
         state: restarted
   when: nomad_version is not in nomad_installed_version.stdout

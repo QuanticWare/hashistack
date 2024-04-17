@@ -1,58 +1,40 @@
 ---
-#tasks file for Hashistack
+# tasks file for Hashistack
+
+- name: "Hashistack | Node Role assignements"
+  ansible.builtin.include_tasks: "01_nodes_roles.yml"
 
 - name: "Hashistack | Commons tasks"
-  ansible.builtin.include_tasks: "commons_tasks.yml"
+  ansible.builtin.include_tasks: "02_commons_tasks.yml"
 
-- name: "Hashistack | Install Docker"
-  ansible.builtin.import_role:
-    name: quanticware.docker.install
-  vars:
-    docker_private_registry_state: false
-  when: nomad_docker_driver == true
-
-- name: "Hashistack | Install CNI"
-  ansible.builtin.import_role:
-    name: quanticware.cni.install
-
-- name: "Hashistack | Install Podman"
-  ansible.builtin.import_role:
-    name: quanticware.podman.install
-  when: nomad_podman_driver == true
-
-- name: "Hashistack | TLS Configuration"
-  ansible.builtin.import_role:
-    name: quanticware.certificate.create
-    tasks_from: ca
-  vars:
-    ca_host: "{{ hashistack_install_tls_ca_host }}"
-    ca_host_dir: "{{ hashistack_install_tls_ca_host_dir }}"
-    ca_pubkey: "{{ hashistack_install_tls_ca_pubkey }}"
-    ca_privatekey: "{{ hashistack_install_tls_ca_privatekey }}"
-    host_certificate_dir: "{{ hashistack_install_tls_host_certificate_dir }}"
-    common_name: "{{ hashistack_install_tls_common_name }}"
-  when: cert_ca_tls_present.stat.exists == false or
-        (cert_ca_tls_present.stat.exists == true and tls_check.valid_at.delay == false)
+- name: "Hashistack | Generate CA Cert"
+  ansible.builtin.include_tasks: "03_ca_cert.yml"
+  when:
+  - hashistack_tls == true
+  - cert_ca_tls_priv_present.stat.exists == false
 
 - name: "Hashistack | Consul install"
-  ansible.builtin.import_role:
+  ansible.builtin.include_role:
     name: quanticware.consul.install
 
 - name: "Hashistack | Vault install"
-  ansible.builtin.import_role:
+  ansible.builtin.include_role:
     name: quanticware.vault.install
+  when: vault_node_role == 'server' or
+        hashistack_install_mode == 'single'
 
 - name: "Hashistack | Nomad install"
-  ansible.builtin.import_role:
+  ansible.builtin.include_role:
     name: quanticware.nomad.install
 
 - name: "Hashistack | Firewall configuration"
-  ansible.builtin.include_tasks: "firewall.yml"
+  ansible.builtin.include_tasks: "04_firewall.yml"
   when: hashistack_firewall == true
 
 - name: "Hashistack | Congratulations!"
-  ansible.builtin.import_role:
+  ansible.builtin.include_role:
     name: quanticware.citations.chucknorris
   vars:
     philosopher: "{{ hero_name }}"
     language: "{{ hero_lang }}"
+  run_once: true

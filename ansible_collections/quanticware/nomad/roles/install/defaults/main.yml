@@ -2,32 +2,86 @@
 # defaults file for install
 
 # General
-nomad_install_mode: "single_node"
+nomad_install_mode: "{% if (ansible_play_hosts | length) == 1 %}single{% elif (ansible_play_hosts | length) > 1 %}cluster{% endif %}"
+nomad_node_role: "{% if nomad_install_mode == 'single' %}both{% elif nomad_install_mode == 'cluster' %}{{ hashistack_node_role | default('both')}}{% endif %}"
+nomad_tls: true
+nomad_acl: true
 
-nomad_install_http_scheme: "https"
-nomad_install_http_ip: "127.0.0.1"
-nomad_install_http_port: 4646
-nomad_install_node_name: "{{ inventory_hostname_short }}"
+nomad_deploy_cluster_name: "{{ hashistack_cluster_name | default('default')}}"
+check_online_version: true
+nomad_install_firewall: false
+
+hashistack_creds_file: "{% if nomad_install_mode == 'single' %}{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/hashistack.yml{% else %}{{ project_dir }}/env/group_vars/{{ nomad_deploy_cluster_name }}/hashistack.yml{% endif %}"
+ansible_venv_on_target_dir: "/root/hashistack_venv"
+
+nomad_workload_identity_state: true
+
+# Configuration
+nomad_install_dc_name: "dc1"
+
+nomad_install_node_name: "{{ inventory_hostname }}"
 nomad_install_region: "global"
 
-check_online_version: true
+nomad_install_user: "{% if nomad_node_role == 'server' %}nomad{% elif nomad_node_role == 'client' or nomad_node_role == 'both' %}root{% endif %}"
+nomad_install_group: "{% if nomad_node_role == 'server' %}nomad{% elif nomad_node_role == 'client' or nomad_node_role == 'both' %}root{% endif %}"
+
 nomad_config_dir: "/etc/nomad.d"
 nomad_config_file: "nomad.hcl"
 nomad_bin_dir: "/usr/bin"
 nomad_install_data_dir: "/opt/nomad"
+nomad_install_data_dir_server: "/opt/nomad/server"
+nomad_install_state_dir_client: "/opt/nomad/client"
 nomad_job_files_dir: "/var/tmp/hashistack/nomad"
 
-nomad_install_dc_name: "dc1"
-
+nomad_install_disable_anonymous_signature: "false"
 nomad_install_disable_update_check: "false"
 
 nomad_install_leave_on_terminate: true
 nomad_install_leave_on_interrupt: true
 
+nomad_install_client_auto_join: 'true'
+nomad_install_server_auto_join: 'true'
+
+# Network
+nomad_install_http_scheme: "{% if nomad_tls == true %}https{% else %}http{% endif %}"
+nomad_install_http_ip: "127.0.0.1"
+nomad_install_http_port: 4646
+
+nomad_install_cluster_bridge: "br0"
+nomad_iface: "{{ ansible_default_ipv4.interface }}"
+
+nomad_list_node_ip:  "\
+  {% set nomad_list_node_ip = [] %}\
+  {% for host in groups[consul_deploy_cluster_name] %}\
+    {% if nomad_list_node_ip.append(hostvars[host]['ansible_' + hostvars[host].nomad_install_cluster_bridge].ipv4.address | default(nomad_install_cluster_bridge)) %}{% endif %}\
+  {% endfor %}\
+  {{ nomad_list_node_ip }}"
+
+nomad_bind_address: "{{ hostvars[inventory_hostname]['ansible_'+ nomad_iface | replace('-', '_')]['ipv4']['address'] }}"
+
+nomad_install_bind_addr: "0.0.0.0"
+
+nomad_install_address_http: "0.0.0.0"
+nomad_install_address_rpc: "{% if nomad_install_mode == 'single' %}0.0.0.0{% else %}{{ hostvars[inventory_hostname]['ansible_'+ nomad_install_cluster_bridge | replace('-', '_')]['ipv4']['address'] }}{% endif %}"
+nomad_install_address_serf: "{% if nomad_install_mode == 'single' %}0.0.0.0{% else %}{{ hostvars[inventory_hostname]['ansible_'+ nomad_install_cluster_bridge | replace('-', '_')]['ipv4']['address'] }}{% endif %}"
+
+nomad_install_advertise_http: "{% if nomad_install_mode == 'single' %}127.0.0.1{% else %}{{ hostvars[inventory_hostname]['ansible_'+ nomad_install_cluster_bridge | replace('-', '_')]['ipv4']['address'] }}{% endif %}"
+nomad_install_advertise_rpc: "{% if nomad_install_mode == 'single' %}127.0.0.1{% else %}{{ hostvars[inventory_hostname]['ansible_'+ nomad_install_cluster_bridge | replace('-', '_')]['ipv4']['address'] }}{% endif %}"
+nomad_install_advertise_serf: "{% if nomad_install_mode == 'single' %}127.0.0.1{% else %}{{ hostvars[inventory_hostname]['ansible_'+ nomad_install_cluster_bridge | replace('-', '_')]['ipv4']['address'] }}{% endif %}"
+
+nomad_install_port_http: 4646
+nomad_install_port_rpc: 4647
+nomad_install_port_serf: 4648
+
+# Network
+nomad_install_bridge: true
+nomad_install_bridge_list:
+- { name: "br1", ip_range: "172.18.0.1/16" }
+
 # Log
-nomad_install_debug: "false"
+nomad_install_debug: "true"
 nomad_install_log_file: "/var/log/nomad/nomad.log"
-nomad_install_log_level: "INFO"
+nomad_install_log_level: "DEBUG"
 nomad_install_log_rotate_bytes: 0
 nomad_install_log_rotate_duration: "24h"
 nomad_install_log_rotate_max_files: 0
@@ -38,13 +92,271 @@ nomad_podman_driver: false
 nomad_raw_exec_driver: false
 podman_rootless: true
 
-# Docker
-docker_tls_configuration: false
+# Server
+nomad_install_server_enabled: "true"
 
+nomad_install_server_bootstrap_expect: "\
+  {% set nomad_install_server_bootstrap_expect = [] %}\
+  {% if nomad_install_mode == 'single' %}\
+    {% set _ = nomad_install_server_bootstrap_expect.append(1) %}\
+  {% else %}\
+    {% for host in groups[nomad_deploy_cluster_name] %}\
+      {% if hostvars[host].consul_node_role in ['server', 'both'] %}\
+        {% set _ = nomad_install_server_bootstrap_expect.append(1) %}\
+      {% endif %}\
+    {% endfor %}\
+  {% endif %}\
+  {{ nomad_install_server_bootstrap_expect | length }}"
+
+nomad_install_server_rejoin_after_leave: "true"
+
+nomad_install_server_enabled_schedulers:
+- service
+- batch
+- system
+
+nomad_install_server_num_schedulers: 2
+
+nomad_install_server_event_buffer_size: 100
+nomad_install_server_node_gc_threshold: "24h"
+nomad_install_server_eval_gc_threshold: "1h"
+nomad_install_server_job_gc_threshold: "4h"
+nomad_install_server_deployment_gc_threshold: "1h"
+
+nomad_install_server_heartbeat_grace: "10s"
+nomad_install_server_min_heartbeat_ttl: "10s"
+nomad_install_server_failover_heartbeat_ttl: "5m"
+nomad_install_server_max_heartbeats_per_second: 50.0
+
+#nomad_install_server_encrypt: ""
+
+nomad_install_server_raft_protocol: 3
+
+# Client
+nomad_install_client_enabled: "true"
+
+nomad_install_client_node_class: "{{ inventory_hostname }}-client"
+nomad_install_client_node_pool: "default"
+
+nomad_install_client_no_host_uuid: "false"
+nomad_install_client_max_kill_timeout: "30s"
+
+nomad_install_client_host_network_list:
+- { name: "public", interface: "{{ ansible_default_ipv4.interface }}" }
+- { name: "cluster", interface: "{{ nomad_install_cluster_bridge | default(ansible_default_ipv4.interface) }}" }
+- { name: "private", interface: "{{ nomad_install_bridge_list | map(attribute='name') | first }}" }
+
+nomad_install_server_join: "{% if nomad_install_mode == 'single' %}127.0.0.1{% else %}{{ ( groups[nomad_deploy_cluster_name] | map('extract', hostvars) | selectattr('nomad_node_role', 'equalto', 'both') | map(attribute='ansible_br0.ipv4.address') ) or ( groups[nomad_deploy_cluster_name] | map('extract', hostvars) | selectattr('nomad_node_role', 'equalto', 'both') | map(attribute='ansible_br0.ipv4.address') ) | unique | list }}{% endif %}"
+nomad_install_server_join_retry_max: 3
+nomad_install_server_join_retry_interval: "15s"
+
+nomad_install_client_server_join_retry_max: 3
+nomad_install_client_server_join_retry_interval: "15s"
+
+nomad_install_client_drain_on_shutdown_deadline: "1m"
+nomad_install_client_drain_on_shutdown_force: "true"
+nomad_install_client_drain_on_shutdown_ignore_system_jobs: "true"
+
+nomad_install_client_cpu_total_compute: 0
+nomad_install_client_memory_total_mb: 0
+nomad_install_client_disk_total_mb: 0
+nomad_install_client_disk_free_mb: 0
+
+nomad_install_client_gc_interval: "1m"
+nomad_install_client_gc_disk_usage_threshold: 80
+nomad_install_client_gc_inode_usage_threshold: 70
+nomad_install_client_gc_parallel_destroys: 2
+
+nomad_install_client_reserved_cpu: 0
+nomad_install_client_reserved_memory: 0
+nomad_install_client_reserved_disk: 0
+
+# TLS
+hashistack_install_tls_ca_host: localhost
+hashistack_install_tls_ca_host_dir: "{% if nomad_install_mode == 'single' %}{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/tls{% else %}{{ project_dir }}/env/group_vars/{{ nomad_deploy_cluster_name }}/tls{% endif %}"
+hashistack_install_tls_ca_pubkey: "hashistack-ca.pem"
+hashistack_install_tls_ca_privatekey: "hashistack-ca-key.pem"
+hashistack_install_tls_host_certificate_dir: "/etc/ssl/hashistack"
+hashistack_install_tls_common_name: "hashistack"
+hashistack_install_tls_check_delay: "+2w"
+
+nomad_install_tls_http: "true"
+nomad_install_tls_rpc: "true"
+
+nomad_install_tls_ca_host: localhost
+nomad_install_tls_ca_host_dir: "{% if nomad_install_mode == 'single' %}{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/tls{% else %}{{ project_dir }}/env/group_vars/{{ nomad_deploy_cluster_name }}/tls{% endif %}"
+nomad_install_tls_ca_pubkey: "hashistack-ca.pem"
+nomad_install_tls_ca_privatekey: "hashistack-ca-key.pem"
+nomad_install_tls_ca_provider: "ownca"
+
+nomad_install_tls_check_delay: "+2w"
+
+nomad_install_tls_host_certificate_dir: "/etc/ssl/hashistack"
+
+# TLS Server
+nomad_install_tls_cert_server: "{{ nomad_install_dc_name }}-server-nomad.pem"
+nomad_install_tls_privatekey_server: "{{ nomad_install_dc_name }}-server-nomad.key"
+
+nomad_install_tls_common_name_server: "*.{{ nomad_install_dc_name }}.nomad"
+# nomad_install_tls_subject_alt_name_server: "DNS:localhost,IP:127.0.0.1,DNS:server.global.nomad,DNS:server.{{ nomad_install_dc_name }}.nomad,DNS:client.global.nomad,DNS:client.{{ nomad_install_dc_name }}.nomad,IP:172.26.64.1,IP:172.17.0.1,IP:172.18.0.1{% if nomad_install_mode == 'cluster' %},{% for item in nomad_list_node_ip %}IP:{{ item }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}"
+nomad_install_tls_subject_alt_name_server: "DNS:localhost,IP:127.0.0.1,DNS:server.global.nomad,DNS:server.{{ nomad_install_dc_name }}.nomad,DNS:*.{{ nomad_install_dc_name }}.nomad,IP:172.26.64.1,IP:172.17.0.1,IP:172.18.0.1"
+
+# TLS client
+nomad_install_tls_cert_client: "{{ nomad_install_dc_name }}-client-nomad.pem"
+nomad_install_tls_privatekey_client: "{{ nomad_install_dc_name }}-client-nomad.key"
+
+nomad_install_tls_common_name_client: "*.{{ nomad_install_dc_name }}.nomad"
+nomad_install_tls_subject_alt_name_client: "DNS:localhost,IP:127.0.0.1,DNS:client.global.nomad,DNS:client.{{ nomad_install_dc_name }}.nomad,DNS:*.{{ nomad_install_dc_name }}.nomad,IP:172.26.64.1,IP:172.17.0.1,IP:172.18.0.1"
+# nomad_install_tls_subject_alt_name_client: "DNS:localhost,IP:127.0.0.1,DNS:server.global.nomad,DNS:server.{{ nomad_install_dc_name }}.nomad,DNS:*.{{ nomad_install_dc_name }}.nomad,DNS:client.global.nomad,DNS:client.{{ nomad_install_dc_name }}.nomad,DNS:*.{{ nomad_install_dc_name }}.nomad,IP:172.26.64.1,IP:172.17.0.1,IP:172.18.0.1"
+# nomad_install_tls_subject_alt_name_client: "DNS:localhost,IP:127.0.0.1,DNS:server.global.nomad,DNS:server.{{ nomad_install_dc_name }}.nomad,DNS:client.global.nomad,DNS:client.{{ nomad_install_dc_name }}.nomad,IP:172.26.64.1,IP:172.17.0.1,IP:172.18.0.1{% if nomad_install_mode == 'cluster' %},{% for item in nomad_list_node_ip %}IP:{{ item }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}"
+# nomad_install_tls_subject_alt_name_client: "DNS:localhost,IP:127.0.0.1,{% for item in ansible_all_ipv4_addresses %}IP:{{ item }}{% if not loop.last %,{% endif %}{% endfor %},DNS:server.global.nomad,DNS:server.{{ nomad_install_dc_name }}.nomad,DNS:client.global.nomad,DNS:client.{{ nomad_install_dc_name }}.nomad{% if nomad_install_mode == 'cluster' %},{% for item in nomad_list_node_ip %}IP:{{ item }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}"
+
+nomad_install_tls_rpc_upgrade_mode: "false"
+nomad_install_tls_verify_server_hostname: "true"
+nomad_install_tls_verify_https_client: "false"
+
+# ACL
+nomad_install_acl_enabled: "true"
+nomad_install_acl_token_ttl: "30s"
+nomad_install_acl_policy_ttl: "30s"
+
+# Consul
+nomad_install_backend_consul_http_scheme: "{% if nomad_tls == true %}https{% else %}http{% endif %}"
+nomad_install_backend_consul_http_ip: "127.0.0.1"
+nomad_install_backend_consul_http_port: "{% if nomad_tls == true %}8501{% else %}8500{% endif %}"
+nomad_install_backend_consul_grpc_port: 8503
+nomad_install_backend_consul_ssl: "{% if nomad_tls == true %}true{% else %}false{% endif %}"
+
+nomad_install_backend_consul_tls_host_certificate_dir: "/etc/ssl/hashistack"
+nomad_install_backend_consul_tls_ca_pubkey: "hashistack-ca.pem"
+nomad_install_backend_consul_tls_cert_server: "{{ nomad_install_dc_name }}-server-consul.pem"
+nomad_install_backend_consul_tls_privatekey_server: "{{ nomad_install_dc_name }}-server-consul.key"
+
+nomad_install_backend_consul_tls_cert_client: "{{ nomad_install_dc_name }}-client-consul.pem"
+nomad_install_backend_consul_tls_privatekey_client: "{{ nomad_install_dc_name }}-client-consul.key"
+
+nomad_install_backend_consul_server_service_name: "nomad-servers"
+nomad_install_backend_consul_client_service_name: "nomad-clients"
+
+nomad_install_backend_consul_service_identity_aud: "consul.io"
+nomad_install_backend_consul_service_identity_ttl: "1h"
+
+nomad_install_backend_consul_task_identity_aud: "consul.io"
+nomad_install_backend_consul_task_identity_ttl: "1h"
+
+nomad_install_backend_consul_auto_advertise: "true"
+
+nomad_install_backend_consul_server_auto_join: "true"
+nomad_install_backend_consul_client_auto_join: "true"
+
+nomad_install_consul_service_address: 172.17.0.1
+
+# JWT
+nomad_install_jwt_url: "{{ nomad_install_http_scheme }}://{{ nomad_install_http_ip }}:{{ nomad_install_http_port }}/.well-known/jwks.json"
+nomad_install_jwt_name: "nomad-workloads"
+
+# Consul JWT
+nomad_install_backend_consul_jwt_url: "{{ nomad_install_http_scheme }}://{{ nomad_install_http_ip }}:{{ nomad_install_http_port }}/.well-known/jwks.json"
+nomad_install_backend_consul_jwt_algs:
+- RS256
+# - EdDSA # Not supported
+
+nomad_install_consul_auth_method_path: "jwt-nomad"
+nomad_install_consul_auth_method_type: "jwt"
+
+nomad_install_backend_consul_jwt_boundaudiences: "consul.io"
+
+nomad_install_backend_consul_jwt_claimmap:
+- nomad_namespace
+- nomad_job_id
+- nomad_task
+- nomad_service
+
+nomad_install_backend_consul_jwt_name: "nomad-workloads"
+nomad_install_backend_consul_jwt_description: "JWT auth method for Nomad services and workloads"
+
+nomad_install_backend_consul_binding_nomad_services_name: "{{ nomad_install_backend_consul_jwt_name }}"
+nomad_install_backend_consul_binding_nomad_services_description: "Binding rule for services registered from Nomad"
+nomad_install_backend_consul_binding_nomad_services_bind_name: "${value.nomad_service}"
+nomad_install_backend_consul_binding_nomad_services_bind_type: "service"
+nomad_install_backend_consul_binding_nomad_services_bind_selector: "\"nomad_service\" in value"
+
+nomad_install_backend_consul_binding_nomad_tasks_name: "{{ nomad_install_backend_consul_jwt_name }}"
+nomad_install_backend_consul_binding_nomad_tasks_description: "Binding rule for Nomad tasks"
+nomad_install_backend_consul_binding_nomad_tasks_bind_name: "nomad-tasks-${value.nomad_namespace}"
+nomad_install_backend_consul_binding_nomad_tasks_bind_type: "role"
+nomad_install_backend_consul_binding_nomad_tasks_bind_selector: "\"nomad_service\" not in value"
+
+nomad_install_backend_consul_policy_nomad_tasks_name: "nomad-tasks"
+nomad_install_backend_consul_policy_nomad_tasks_description: "ACL policy used by Nomad tasks"
+
+nomad_install_backend_consul_role_nomad_tasks_name: "nomad-tasks-default"
+nomad_install_backend_consul_role_nomad_tasks_description: "ACL role for Nomad tasks in the default Nomad namespace"
+
+# Vault
+nomad_install_vault_secret_engine_kv: "apps"
+
+nomad_install_backend_vault_http_scheme: "{% if nomad_tls == true %}https{% else %}http{% endif %}"
+nomad_install_backend_vault_http_ip: "{% if vault_node_role == 'server' %}127.0.0.1{% else %}vault.service.consul{% endif %}"
+nomad_install_backend_vault_http_port: 8200
+
+nomad_install_vault_create_from_role: "{% if nomad_workload_identity_state == true %}{{ nomad_install_vault_jwt_name }}{% else %}nomad-cluster{% endif %}"
+nomad_install_vault_tls_skip_verify: "false"
+
+nomad_install_vault_tls_host_certificate_dir: "/etc/ssl/hashistack"
+nomad_install_vault_consul_tls_ca_pubkey: "hashistack-ca.pem"
+
+nomad_install_vault_tls_cert: "{{ nomad_install_dc_name }}-server-vault.pem"
+nomad_install_vault_tls_privatekey: "{{ nomad_install_dc_name }}-server-vault.key"
+
+nomad_install_vault_identity_aud: "vault.io"
+nomad_install_vault_identity_ttl: "1h"
+
+nomad_install_vault_identity_env: 'true'
+nomad_install_vault_identity_file: 'false'
+
+# Vault JWT
+nomad_install_vault_jwt_boundaudiences: "vault.io"
+
+nomad_install_vault_jwt_url: "{{ nomad_install_http_scheme }}://{{ nomad_install_http_ip }}:{{ nomad_install_http_port }}/.well-known/jwks.json"
+nomad_install_vault_jwt_algs:
+- RS256
+- EdDSA
+
+nomad_install_vault_jwt_name: "nomad-workloads"
+
+nomad_install_vault_auth_method_path: "jwt-nomad"
+nomad_install_vault_auth_method_type: "jwt"
+
+nomad_install_vault_secret_jwt_auth_config:
+  jwks_url: "{{ nomad_install_vault_jwt_url }}"
+  jwks_ca_pem: "{% if nomad_tls == true %}{{ ca_certificate_output.stdout }}{% endif %}"
+  jwt_supported_algs: "[{% for item in nomad_install_vault_jwt_algs %}\"{{ item }}\"{% if not loop.last %}, {% endif %}{% endfor %}]"
+  default_role: "{{ nomad_install_vault_jwt_name }}"
+
+nomad_install_vault_role:
+  role_type: "{{ nomad_install_vault_auth_method_type }}"
+  bound_audiences: ["{{ nomad_install_vault_jwt_boundaudiences }}"]
+  user_claim: "/nomad_job_id"
+  user_claim_json_pointer: true
+  claim_mappings:
+    nomad_namespace: "nomad_namespace"
+    nomad_job_id: "nomad_job_id"
+    nomad_task: "nomad_task"
+  token_type: "service"
+  token_policies: ["{{ nomad_install_jwt_name }}"]
+  token_period: "30m"
+  token_explicit_max_ttl: 0
+
+nomad_install_vault_policy: path \"{{ nomad_install_vault_secret_engine_kv }}/data/{% raw %}{{identity.entity.aliases.{% endraw %}{{ auth_accessord_id }}{% raw %}.metadata.nomad_namespace}}/{{identity.entity.aliases.{% endraw %}{{ auth_accessord_id }}{% raw %}.metadata.nomad_job_id}}/*{% endraw %}\" {\n capabilities = [\"read\"]\n }\n \n path \"{{ nomad_install_vault_secret_engine_kv }}/data/{% raw %}{{identity.entity.aliases.{% endraw %}{{ auth_accessord_id }}{% raw %}.metadata.nomad_namespace}}/{{identity.entity.aliases.{% endraw %}{{ auth_accessord_id }}{% raw %}.metadata.nomad_job_id}}{% endraw %}\" {\n capabilities = [\"read\"]\n }\n \n path \"{{ nomad_install_vault_secret_engine_kv }}/metadata/{% raw %}{{identity.entity.aliases.{% endraw %}{{ auth_accessord_id }}{% raw %}.metadata.nomad_namespace}}/*{% endraw %}\" {\n capabilities = [\"list\"]\n }\n \n path \"{{ nomad_install_vault_secret_engine_kv }}/metadata/*\" {\n capabilities = [\"list\"]\n }\n \n
+
+# Docker
 nomad_install_docker_client_dc_name: "dc1"
 
 nomad_install_docker_tcp_listen_address: "127.0.0.1"
 nomad_install_docker_tcp_listen_port: 2376
+
+docker_tls_configuration: false
 
 nomad_install_docker_client_tls_host_certificate_dir: "/etc/ssl/docker"
 nomad_install_docker_client_tls_cert: "{{ nomad_install_docker_client_dc_name }}-client-docker.pem"
@@ -68,138 +380,12 @@ nomad_install_docker_client_allow_caps:
 - sys_ptrace
 - sys_admin
 
-# Addresses
-nomad_iface: "{{ ansible_default_ipv4.interface }}"
-nomad_bind_address: "{% if nomad_install_mode == 'single_node' %}127.0.0.1{% else %}{{ hostvars[inventory_hostname]['ansible_'+ nomad_iface | replace('-', '_')]['ipv4']['address'] }}{% endif %}"
-nomad_install_bind_addr: "0.0.0.0"
+nomad_install_docker_private_registry_state: false
+nomad_install_docker_private_registry_url: ""
+nomad_install_docker_private_registry_username: ""
+nomad_install_docker_private_registry_password: ""
+nomad_install_docker_private_registry_config: "{{ nomad_install_data_dir }}/docker_config.json"
 
-nomad_install_advertise_http: "{% if nomad_install_mode == 'single_node' %}127.0.0.1{% else %}{{ hostvars[inventory_hostname]['ansible_'+ nomad_iface | replace('-', '_')]['ipv4']['address'] }}{% endif %}:{{ nomad_install_port_http }}"
-nomad_install_advertise_rpc: "{% if nomad_install_mode == 'single_node' %}127.0.0.1{% else %}{{ hostvars[inventory_hostname]['ansible_'+ nomad_iface | replace('-', '_')]['ipv4']['address'] }}{% endif %}:{{ nomad_install_port_rpc }}"
-nomad_install_advertise_serf: "{% if nomad_install_mode == 'single_node' %}127.0.0.1{% else %}{{ hostvars[inventory_hostname]['ansible_'+ nomad_iface | replace('-', '_')]['ipv4']['address'] }}{% endif %}:{{ nomad_install_port_serf }}"
-
-nomad_install_port_http: 4646
-nomad_install_port_rpc: 4647
-nomad_install_port_serf: 4648
-
-# Server
-nomad_install_server_enabled: "true"
-
-nomad_install_server_bootstrap_expect: 1
-
-nomad_install_server_rejoin_after_leave: "false"
-
-nomad_install_server_enabled_schedulers:
-- service
-- batch
-- system
-
-nomad_install_server_num_schedulers: 2
-
-nomad_install_server_node_gc_threshold: "24h"
-nomad_install_server_eval_gc_threshold: "1h"
-nomad_install_server_job_gc_threshold: "4h"
-nomad_install_server_deployment_gc_threshold: "1h"
-
-#nomad_install_server_encrypt: ""
-
-nomad_install_server_raft_protocol: 3
-
-# Client
-nomad_install_client_enabled: "true"
-
-#nomad_install_client_node_class: ""
-nomad_install_client_no_host_uuid: "false"
-nomad_install_client_max_kill_timeout: "30s"
-
-nomad_install_client_servers:
-- 127.0.0.1:4647
-
-nomad_install_client_server_join:
-- 127.0.0.1
-
-nomad_install_client_server_join_retry_max: 3
-nomad_install_client_server_join_retry_interval: "15s"
-
-nomad_install_client_drain_on_shutdown_deadline: "1m"
-nomad_install_client_drain_on_shutdown_force: "true"
-nomad_install_client_drain_on_shutdown_ignore_system_jobs: "true"
-
-nomad_install_client_network_speed: 0
-nomad_install_client_cpu_total_compute: 0
-
-nomad_install_client_gc_interval: "1m"
-nomad_install_client_gc_disk_usage_threshold: 80
-nomad_install_client_gc_inode_usage_threshold: 70
-nomad_install_client_gc_parallel_destroys: 2
-
-nomad_install_client_reserved_cpu: 0
-nomad_install_client_reserved_memory: 0
-nomad_install_client_reserved_disk: 0
-
-# TLS
-nomad_install_tls_http: "true"
-nomad_install_tls_rpc: "true"
-
-nomad_install_tls_ca_host: localhost
-nomad_install_tls_ca_host_dir: "{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/tls"
-nomad_install_tls_ca_pubkey: "hashistack-ca.pem"
-nomad_install_tls_ca_privatekey: "hashistack-ca-key.pem"
-nomad_install_tls_ca_provider: "ownca"
-
-nomad_install_tls_check_delay: "+2w"
-
-nomad_install_tls_host_certificate_dir: "/etc/ssl/hashistack"
-
-nomad_install_tls_cert: "{{ nomad_install_dc_name }}-server-nomad.pem"
-nomad_install_tls_privatekey: "{{ nomad_install_dc_name }}-server-nomad.key"
-
-nomad_install_tls_common_name: "*.{{ nomad_install_dc_name }}.nomad"
-nomad_install_tls_subject_alt_name: "DNS:localhost,IP:127.0.0.1,DNS:server.global.nomad,DNS:server.{{ nomad_install_dc_name }}.nomad"
-
-nomad_install_tls_rpc_upgrade_mode: "false"
-nomad_install_tls_verify_server_hostname: "true"
-nomad_install_tls_verify_https_client: "false"
-
-# ACL
-nomad_install_acl_enabled: "true"
-nomad_install_acl_token_ttl: "30s"
-nomad_install_acl_policy_ttl: "30s"
-
-
-# Consul
-nomad_install_backend_consul_http_scheme: "https"
-nomad_install_backend_consul_http_ip: "127.0.0.1"
-nomad_install_backend_consul_http_port: 8501
-nomad_install_backend_consul_grpc_port: 8503
-nomad_install_backend_consul_ssl: "true"
-
-nomad_install_backend_consul_tls_host_certificate_dir: "/etc/ssl/hashistack"
-nomad_install_backend_consul_tls_ca_pubkey: "hashistack-ca.pem"
-nomad_install_backend_consul_tls_cert: "{{ nomad_install_dc_name }}-server-consul.pem"
-nomad_install_backend_consul_tls_privatekey: "{{ nomad_install_dc_name }}-server-consul.key"
-
-nomad_install_backend_consul_server_service_name: "nomad-servers"
-nomad_install_backend_consul_client_service_name: "nomad-clients"
-
-nomad_install_backend_consul_auto_advertise: "true"
-
-nomad_install_backend_consul_server_auto_join: "true"
-nomad_install_backend_consul_client_auto_join: "true"
-
-nomad_install_consul_service_address: 172.17.0.1
-
-# Vault
-nomad_install_backend_vault_http_scheme: "https"
-nomad_install_backend_vault_http_ip: "127.0.0.1"
-nomad_install_backend_vault_http_port: 8200
-
-nomad_install_vault_create_from_role: "nomad-cluster"
-nomad_install_vault_tls_skip_verify: "false"
-
-nomad_install_vault_tls_cert: "{{ nomad_install_dc_name }}-server-vault.pem"
-nomad_install_vault_tls_privatekey: "{{ nomad_install_dc_name }}-server-vault.key"
-
-# Docker
 nomad_install_docker_allow_privileged: "false"
 nomad_install_docker_volume_enable: "true"
 nomad_install_docker_gc_image: "true"
@@ -216,10 +402,10 @@ nomad_install_podman_volume_enabled: "true"
 
 # Telemetry
 nomad_install_telemetry_disable_hostname: "false"
-nomad_install_telemetry_collection_interval: "1s"
+nomad_install_telemetry_collection_interval: "5s"
 nomad_install_telemetry_use_node_name: "false"
-nomad_install_telemetry_publish_allocation_metrics: "false"
-nomad_install_telemetry_publish_node_metrics: "false"
+nomad_install_telemetry_publish_allocation_metrics: "true"
+nomad_install_telemetry_publish_node_metrics: "true"
 nomad_install_telemetry_filter_default: "true"
 # nomad_install_telemetry_prefix_filter:
 nomad_install_telemetry_disable_dispatched_job_summary_metrics: "false"
@@ -258,8 +444,8 @@ nomad_install_ui_content_security_policy_img_src: ""
 nomad_install_ui_content_security_policy_script_src: "'self'"
 nomad_install_ui_content_security_policy_style_src: ""
 
-nomad_install_ui_consul_ui_url: "https://127.0.0.1:8501/ui"
-nomad_install_ui_vault_ui_url: "https://127.0.0.1:8200/ui"
+nomad_install_ui_consul_ui_url: "{{ nomad_install_backend_consul_http_scheme }}://{{ nomad_install_backend_consul_http_ip }}:{{ nomad_install_backend_consul_http_port }}/ui"
+nomad_install_ui_vault_ui_url: "{{ nomad_install_backend_vault_http_scheme }}://{{ nomad_install_backend_vault_http_ip }}:{{ nomad_install_backend_vault_http_port }}/ui"
 
 nomad_install_ui_label_text: "{{ inventory_hostname }}"
 nomad_install_ui_label_background_color: "blue"

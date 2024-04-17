@@ -5,7 +5,7 @@
   ansible.builtin.pip:
     name: "{{ item }}"
   loop:
-  - ansible
+    - ansible
 
 - name: "Vault Unseal | Copy auto-unseal playbook"
   ansible.builtin.template:
@@ -14,8 +14,8 @@
     mode: "0644"
 
 - name: "Vault Unseal | Copy service systemd file"
-  copy:
-    src: vault-unseal.service
+  ansible.builtin.template:
+    src: vault-unseal.service.j2
     dest: /lib/systemd/system/vault-unseal.service
     owner: root
     group: root
@@ -35,12 +35,12 @@
 - name: "Vault Unseal | Add vault-unseal.service wait to Nomad the systemd unit file"
   ansible.builtin.lineinfile:
     path: /lib/systemd/system/nomad.service
-    regexp: "^After=network-online.target"
-    line: "After=network-online.target vault-unseal.service"
+    insertafter: 'After=consul.service'
+    line: 'After=vault-unseal.service'
   when: nomad_binary.stat.exists == true
 
 - name: "Vault Unseal | Register systemd service"
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     name: vault-unseal.service
     enabled: true
     daemon_reload: true

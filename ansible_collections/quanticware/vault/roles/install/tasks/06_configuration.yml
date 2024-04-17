@@ -1,0 +1,197 @@
+- name: "Vault Configuration | Check init status"
+  ansible.builtin.uri:
+    url: "{{ vault_install_http_scheme }}://{{ vault_install_http_ip }}:{{ vault_install_http_port }}/v1/sys/init"
+    ca_path: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}{% endif %}"
+    client_cert: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_cert }}{% endif %}"
+    client_key: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_privatekey }}{% endif %}"
+    method: GET
+    status_code:
+        - 200
+        - 404
+  register: vault_init_status
+  run_once: true
+
+- name: "Vault Configuration | Init process"
+  block:
+    - name: Vault Configuration | Init Vault
+      ansible.builtin.uri:
+        url: "{{ vault_install_http_scheme }}://{{ vault_install_http_ip }}:{{ vault_install_http_port }}/v1/sys/init"
+        ca_path: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}{% endif %}"
+        client_cert: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_cert }}{% endif %}"
+        client_key: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_privatekey }}{% endif %}"
+        method: POST
+        body: |
+            {
+              "secret_shares": 5,
+              "secret_threshold": 3
+            }
+        body_format: json
+        status_code:
+            - 200
+      register: vault_init_result
+
+    - ansible.builtin.debug:
+        msg: "{{ vault_init_result.json.root_token }}"
+
+    - ansible.builtin.debug:
+        msg: "{{ vault_init_result.json.keys }}"
+
+    - ansible.builtin.debug:
+        msg: "{{ vault_init_result.json.keys_base64 }}"
+
+    - ansible.builtin.set_fact:
+        vault_root_token: "{{ vault_init_result.json.root_token }}"
+        vault_init_facts: |
+          {
+            "vault_url": "{{ vault_install_http_scheme }}://{{ vault_install_http_ip }}:{{ vault_install_http_port }}",
+            "vault_keys": "{{ vault_init_result.json.keys }}",
+            "vault_keys_base64": {{ vault_init_result.json.keys_base64 }},
+          }
+
+    - name: "Vault Configuration | Insert vault_url in group"
+      ansible.builtin.lineinfile:
+        path: "{{ hashistack_creds_file }}"
+        regexp: "^vault_url: "
+        line: 'vault_url: "{{ vault_install_http_scheme }}://{{ vault_install_http_ip }}:{{ vault_install_http_port }}"'
+        create: yes
+      delegate_to: localhost
+      become: false
+
+    - name: "Vault Configuration | Insert vault_root_token in group"
+      ansible.builtin.lineinfile:
+        path: "{{ hashistack_creds_file }}"
+        regexp: "^vault_root_token: "
+        line: 'vault_root_token: "{{ vault_init_result.json.root_token }}"'
+        create: yes
+      delegate_to: localhost
+      become: false
+
+    - name: "Vault Configuration | Insert vault_keys_base64 in group"
+      ansible.builtin.lineinfile:
+        path: "{{ hashistack_creds_file }}"
+        regexp: "^vault_keys: "
+        line: 'vault_keys: "{{ vault_init_result.json.keys }}"'
+        create: yes
+      delegate_to: localhost
+      become: false
+
+    - name: "Vault Configuration | Insert vault_keys in group {{ vault_deploy_cluster_name }}"
+      ansible.builtin.lineinfile:
+        path: "{{ hashistack_creds_file }}"
+        regexp: "^vault_keys_base64: "
+        line: 'vault_keys_base64: {{ vault_init_result.json.keys_base64 }}'
+        create: yes
+      delegate_to: localhost
+      become: false
+  when: vault_init_status.json.initialized == false
+  run_once: true
+
+- name: Vault | Install | Get Status
+  ansible.builtin.uri:
+    url: "{{ vault_install_http_scheme }}://{{ vault_install_http_ip }}:{{ vault_install_http_port }}/v1/sys/health"
+    ca_path: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}{% endif %}"
+    client_cert: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_cert }}{% endif %}"
+    client_key: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_privatekey }}{% endif %}"
+    method: GET
+    headers:
+        X-Vault-Token: "{{ vault_init_result.json.root_token | default(vault_root_token) }}"
+    status_code:
+        - 200
+        - 429
+        - 472
+        - 473
+        - 501
+        - 503
+  register: vault_health
+  until: vault_health.status | int == 503 or vault_health.status | int == 501
+  retries: 20
+  delay: 5
+  when: vault_init_status.json.initialized == false
+
+- name: "Vault Configuration | Check stats of local ansible fact file"
+  ansible.builtin.stat:
+    path: "/etc/ansible/facts.d/vault.fact"
+  register: ansible_local_facts_vault_file
+
+- name: "Vault Configuration | Writes Vault keys process"
+  block:
+    - ansible.builtin.set_fact:
+        vault_init_facts: |
+          {
+            "vault_url": "{{ vault_install_http_scheme }}://{{ vault_install_http_ip }}:{{ vault_install_http_port }}",
+            "vault_keys": "{{ vault_init_result.json.keys | default(vault_keys) }}",
+            "vault_keys_base64": {{ vault_init_result.json.keys_base64 | default(vault_keys_base64) }},
+          }
+
+    - name: "Vault Configuration | Insert Vault Configuration facts in ansible local facts"
+      ansible.builtin.copy:
+        dest: /etc/ansible/facts.d/vault.fact
+        content: "{{ vault_init_facts | to_nice_json }}"
+        mode: "0600"
+
+    - name: "Vault Configuration | Replace specials characters in fact"
+      ansible.builtin.replace:
+        path: /etc/ansible/facts.d/vault.fact
+        after: "vault_keys_base64"
+        before: "vault_root_token"
+        regexp: "'"
+        replace: '"'
+  when: ansible_local_facts_vault_file.stat.exists == false
+
+- name: "Vault configuration | Change systemunit start order (After Consul)"
+  ansible.builtin.lineinfile:
+    path: /lib/systemd/system/vault.service
+    regexp: "^After=network-online.target"
+    line: "After=consul.service"
+
+- name: "Vault configuration | Daemon reload systemd"
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: "Vault Configuration | Reload local facts to configure Vault Configuration"
+  ansible.builtin.setup:
+    filter: ansible_local
+
+- name: Vault Unseal | Unseal
+  ansible.builtin.uri:
+    url: "{{ vault_install_http_scheme }}://{{ vault_install_http_ip }}:{{ vault_install_http_port }}/v1/sys/unseal"
+    ca_path: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}{% endif %}"
+    client_cert: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_cert }}{% endif %}"
+    client_key: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_privatekey }}{% endif %}"
+    method: POST
+    body: |
+      {
+        "key": "{{ item }}"
+      }
+    body_format: json
+  loop:
+  - "{{ ansible_local.vault.vault_keys_base64.0 | default(vault_keys_base64[1]) }}"
+  - "{{ ansible_local.vault.vault_keys_base64.1 | default(vault_keys_base64[2]) }}"
+  - "{{ ansible_local.vault.vault_keys_base64.2 | default(vault_keys_base64[3]) }}"
+  register: vault_unseal
+  until: (vault_unseal.status | int == 200 or vault_health.status | int == 429)
+  retries: 20
+  delay: 5
+
+- name: "Vault Configuration | Enable usage metrics"
+  ansible.builtin.uri:
+    url: "{{ vault_install_http_scheme }}://{{ vault_install_http_ip }}:{{ vault_install_http_port }}/v1/sys/internal/counters/config"
+    ca_path: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}{% endif %}"
+    client_cert: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_cert }}{% endif %}"
+    client_key: "{% if vault_tls %}{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_privatekey }}{% endif %}"
+    method: POST
+    headers:
+      X-Vault-Token: "{{ vault_root_token | default(vault_init_result.json.root_token) }}"
+    body: |
+        {
+          "enabled": "enable"
+        }
+    body_format: json
+    status_code:
+        - 200
+        - 204
+  register: vault_enable_stats
+  run_once: true
+  until: vault_enable_stats.status | int == 204
+  retries: 20
+  delay: 3

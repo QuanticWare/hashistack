@@ -2,11 +2,21 @@ name = "{{ nomad_install_node_name }}"
 region = "{{ nomad_install_region }}"
 datacenter = "{{ nomad_install_dc_name }}"
 
-enable_debug = {{ nomad_install_debug }}
+disable_anonymous_signature = {{ nomad_install_disable_anonymous_signature }}
 disable_update_check = {{ nomad_install_disable_update_check }}
 
+data_dir = "{{ nomad_install_data_dir }}"
 
+{% if nomad_install_mode == 'single'%}
 bind_addr = "{{ nomad_install_bind_addr }}"
+{% else %}
+addresses {
+    http = "{{ nomad_install_address_http }}"
+    rpc = "{{ nomad_install_address_rpc }}"
+    serf = "{{ nomad_install_address_serf }}"
+}
+{% endif %}
+
 advertise {
     http = "{{ nomad_install_advertise_http }}"
     rpc = "{{ nomad_install_advertise_rpc }}"
@@ -18,8 +28,7 @@ ports {
     serf = {{ nomad_install_port_serf }}
 }
 
-data_dir = "{{ nomad_install_data_dir }}"
-
+enable_debug = {{ nomad_install_debug }}
 log_file = "{{ nomad_install_log_file }}"
 log_level = "{{ nomad_install_log_level }}"
 log_rotate_bytes = {{ nomad_install_log_rotate_bytes }}
@@ -29,45 +38,36 @@ log_rotate_max_files = {{ nomad_install_log_rotate_max_files }}
 leave_on_terminate = {{ nomad_install_leave_on_terminate | lower }}
 leave_on_interrupt = {{ nomad_install_leave_on_interrupt | lower }}
 
-tls {
-    http = {{ nomad_install_tls_http }}
-    rpc = {{ nomad_install_tls_rpc }}
-    ca_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_ca_pubkey }}"
-    cert_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_cert }}"
-    key_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_privatekey }}"
-    rpc_upgrade_mode = {{ nomad_install_tls_rpc_upgrade_mode }}
-    verify_server_hostname = "{{ nomad_install_tls_verify_server_hostname }}"
-    verify_https_client = "{{ nomad_install_tls_verify_https_client }}"
-}
-
+{% if nomad_acl == true %}
 acl {
     enabled = {{ nomad_install_acl_enabled }}
     token_ttl = "{{ nomad_install_acl_token_ttl }}"
     policy_ttl = "{{ nomad_install_acl_policy_ttl }}"
     replication_token = ""
 }
+{% endif %}
 
 telemetry {
-    disable_hostname = "{{ nomad_install_telemetry_disable_hostname }}"
+    disable_hostname = {{ nomad_install_telemetry_disable_hostname }}
     collection_interval = "{{ nomad_install_telemetry_collection_interval }}"
-    use_node_name = "{{ nomad_install_telemetry_use_node_name }}"
-    publish_allocation_metrics = "{{ nomad_install_telemetry_publish_allocation_metrics }}"
-    publish_node_metrics = "{{ nomad_install_telemetry_publish_node_metrics }}"
-    filter_default = "{{ nomad_install_telemetry_filter_default }}"
+    use_node_name = {{ nomad_install_telemetry_use_node_name }}
+    publish_allocation_metrics = {{ nomad_install_telemetry_publish_allocation_metrics }}
+    publish_node_metrics = {{ nomad_install_telemetry_publish_node_metrics }}
+    filter_default = {{ nomad_install_telemetry_filter_default }}
     prefix_filter = []
-    disable_dispatched_job_summary_metrics = "{{ nomad_install_telemetry_disable_dispatched_job_summary_metrics }}"
+    disable_dispatched_job_summary_metrics = {{ nomad_install_telemetry_disable_dispatched_job_summary_metrics }}
     statsite_address = ""
     statsd_address = ""
     datadog_address = ""
     datadog_tags = []
-    prometheus_metrics = "{{ nomad_install_telemetry_prometheus_metrics }}"
+    prometheus_metrics = {{ nomad_install_telemetry_prometheus_metrics }}
     circonus_api_token = ""
     circonus_api_app = "{{ nomad_install_telemetry_circonus_api_app }}"
     circonus_api_url = "{{ nomad_install_telemetry_circonus_api_url }}"
     circonus_submission_interval = "{{ nomad_install_telemetry_circonus_submission_interval }}"
     circonus_submission_url = ""
     circonus_check_id = ""
-    circonus_check_force_metric_activation = "{{ nomad_install_telemetry_circonus_check_force_metric_activation }}"
+    circonus_check_force_metric_activation = {{ nomad_install_telemetry_circonus_check_force_metric_activation }}
     circonus_check_instance_id = ""
     circonus_check_search_tag = ""
     circonus_check_display_name = ""

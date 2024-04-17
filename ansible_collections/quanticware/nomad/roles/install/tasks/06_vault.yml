@@ -1,0 +1,53 @@
+
+---
+- block:
+    - name: "Nomad | Vault Policies | Create Policy for Nomad-Server"
+      ansible.builtin.import_role:
+        name: "quanticware.vault.operate"
+        tasks_from: policy_create
+      vars:
+        vault_policy_name: "nomad-server"
+        vault_policy_rules: 'path \"auth/token/create/nomad-cluster\" {\n  capabilities = [\"update\"]\n}\n\npath \"auth/token/roles/nomad-cluster\" {\n  capabilities = [\"read\"]\n}\n\npath \"auth/token/lookup-self\" {\n  capabilities = [\"read\"]\n}\n\npath \"auth/token/lookup\" {\n  capabilities = [\"update\"]\n}\n\npath \"auth/token/revoke-accessor\" {\n  capabilities = [\"update\"]\n}\n\npath \"sys/capabilities-self\" {\n  capabilities = [\"update\"]\n}\n\npath \"auth/token/renew-self\" {\n  capabilities = [\"update\"]\n}\n'
+
+    - name: "Nomad | Vault Policies | Create Policy for access-creds"
+      ansible.builtin.import_role:
+        name: "quanticware.vault.operate"
+        tasks_from: policy_create
+      vars:
+        vault_policy_name: "access-creds"
+        vault_policy_rules: 'path \"env/*\" {\n  capabilities = [\"list\", \"read\", \"create\", \"update\"]\n}\npath \"apps/*\" {\n  capabilities = [\"list\", \"read\", \"create\", \"update\"]\n}\n'
+
+    - name: "Nomad | Vault Policies | Create Roles for Nomad-Cluster"
+      ansible.builtin.import_role:
+        name: "quanticware.vault.operate"
+        tasks_from: role_create
+      vars:
+        vault_role_name: "nomad-cluster"
+        vault_role_rules: '{"allowed_policies":"nomad-server,access-creds","name":"nomad","orphan":"true","renewable":"true","period":"46080s","token_period":"768h","max_ttl":"768h"}'
+
+    - name: "Nomad | Vault Token | Create Vault Token for Nomad"
+      ansible.builtin.import_role:
+        name: "quanticware.vault.operate"
+        tasks_from: token_create
+      vars:
+        vault_policies:
+        - "nomad-server"
+        - "access-creds"
+      when: vault_nomad_token is undefined
+
+    - name: "Nomad | Vault Token | Insert vault_nomad_token in group {{ inventory_hostname }}"
+      ansible.builtin.lineinfile:
+        path: "{{ hashistack_creds_file }}"
+        regexp: "^vault_nomad_token: "
+        line: 'vault_nomad_token: "{{ vault_new_token_result.json.auth.client_token  | default(vault_nomad_token) }}"'
+        create: yes
+      delegate_to: localhost
+      become: no
+      when: vault_nomad_token is undefined
+  run_once: true
+
+- ansible.builtin.set_fact:
+    vault_nomad_token: "{{ hostvars[groups[nomad_deploy_cluster_name][0]]['vault_new_token_result'] }}"
+  when:
+  - vault_new_token_result is defined
+  - nomad_install_mode == 'cluster'

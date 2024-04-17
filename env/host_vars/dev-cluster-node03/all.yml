@@ -1,0 +1,8 @@
+ansible_host: $IP
+ansible_connection: ssh
+ansible_user: $USER
+ansible_port: 22
+ansible_ssh_private_key_file: "~/.ssh/id_rsa"
+hashistack_node_role: "server"
+# consul_node_role: server
+# nomad_node_role: server

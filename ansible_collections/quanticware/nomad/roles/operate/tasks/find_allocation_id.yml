@@ -2,24 +2,11 @@
   ansible.builtin.shell: nomad job allocs  -t {% raw %} '{{ range . }}{{ if eq .TaskGroup "{% endraw %}{{ nomad_operate_tasks_name }}{% raw %}" }}{{ println .ID }}{{ end }}{{ end }}' {% endraw %}{{ nomad_operate_job }}{% raw %}  | head -n 1{% endraw %}
   environment:
     NOMAD_ADDR: "{{ nomad_http_scheme }}://{{ nomad_http_ip }}:{{ nomad_http_port }}"
-    NOMAD_TOKEN: "{{ nomad_management_token }}"
-    NOMAD_CLIENT_CERT: "{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_cert }}"
-    NOMAD_CLIENT_KEY: "{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_privatekey }}"
-    NOMAD_CACERT: "{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_ca_pubkey }}"
+    NOMAD_TOKEN: "{% if nomad_acl %}{{ nomad_management_token }}{% endif %}"
+    NOMAD_CLIENT_CERT: "{% if nomad_tls %}{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_cert }}{% endif %}"
+    NOMAD_CLIENT_KEY: "{% if nomad_tls %}{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_privatekey }}{% endif %}"
+    NOMAD_CACERT: "{% if nomad_tls %}{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_ca_pubkey }}{% endif %}"
   register: allocation_id
-  when: nomad_unsecure == false
 
 - debug:
     msg: "{{ allocation_id.stdout }}"
-  when: nomad_unsecure == false
-
-# - name: "Nomad operate | Nomad shell command find allocation ID (unsecure)"
-#   ansible.builtin.shell: nomad job allocs  -t {% raw %} '{{ range . }}{{ if eq .TaskGroup "{% endraw %}{{ nomad_operate_tasks_name }}{% raw %}" }}{{ println .ID }}{{ end }}{{ end }}' {% endraw %}{{ nomad_operate_job }}{% raw %}  | head -n 1{% endraw %}
-#   environment:
-#     NOMAD_ADDR: "http://{{ nomad_http_ip }}:{{ nomad_http_port }}"
-#   register: allocation_id
-#   when: nomad_unsecure == true
-
-# - debug:
-#     msg: "{{ allocation_id.stdout }}"
-#   when: nomad_unsecure == true

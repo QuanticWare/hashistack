@@ -1,0 +1,82 @@
+---
+
+- name: "Nomad | TLS Configuration for Servers"
+  ansible.builtin.import_role:
+    name: quanticware.certificate.create
+    tasks_from: client
+  vars:
+    host_certificate_dir: "{{ nomad_install_tls_ca_host_dir }}"
+    ca_host_dir: "{{ nomad_install_tls_ca_host_dir }}"
+    ca_pubkey: "{{ nomad_install_tls_ca_pubkey }}"
+    ca_privatekey: "{{ nomad_install_tls_ca_privatekey }}"
+    ca_provider: "{{ nomad_install_tls_ca_provider }}"
+    ca_host: "{{ nomad_install_tls_ca_host }}"
+    cert: "{{ nomad_install_tls_cert_server }}"
+    client_privatekey: "{{ nomad_install_tls_privatekey_server }}"
+    common_name: "{{ nomad_install_tls_common_name_server }}"
+    subject_alt_name: "{{ nomad_install_tls_subject_alt_name_server }}"
+  when: cert_tls_server_present.stat.exists == false or
+        (cert_tls_server_present.stat.exists == true and tls_check_server.valid_at.delay == false)
+  become: false
+  delegate_to: localhost
+  run_once: true
+
+- name: "Nomad | TLS Configuration for Clients"
+  ansible.builtin.import_role:
+    name: quanticware.certificate.create
+    tasks_from: client
+  vars:
+    host_certificate_dir: "{{ nomad_install_tls_ca_host_dir }}"
+    ca_host_dir: "{{ nomad_install_tls_ca_host_dir }}"
+    ca_pubkey: "{{ nomad_install_tls_ca_pubkey }}"
+    ca_privatekey: "{{ nomad_install_tls_ca_privatekey }}"
+    ca_provider: "{{ nomad_install_tls_ca_provider }}"
+    ca_host: "{{ nomad_install_tls_ca_host }}"
+    cert: "{{ nomad_install_tls_cert_client }}"
+    client_privatekey: "{{ nomad_install_tls_privatekey_client }}"
+    common_name: "{{ nomad_install_tls_common_name_client }}"
+    subject_alt_name: "{{ nomad_install_tls_subject_alt_name_client }}"
+  when:
+  - nomad_install_mode == 'cluster'
+  - ( groups[nomad_deploy_cluster_name] | map('extract', hostvars) | selectattr('nomad_node_role', 'equalto', 'client') | map(attribute='inventory_hostname') | length ) >= 1
+  - (( groups[nomad_deploy_cluster_name] | map('extract', hostvars) | selectattr('nomad_node_role', 'equalto', 'client') | map(attribute='cert_tls_client_present.stat.exists') | list | first ) == false ) or
+    (( groups[nomad_deploy_cluster_name] | map('extract', hostvars) | selectattr('nomad_node_role', 'equalto', 'client') | map(attribute='cert_tls_client_present.stat.exists') | list | first ) == true and (groups[nomad_deploy_cluster_name] | map('extract', hostvars) | selectattr('nomad_node_role', 'equalto', 'client') | map(attribute='tls_check_client.valid_at.delay') | list | first ) == false )
+  become: false
+  delegate_to: localhost
+  run_once: true
+
+- block:
+    - name: "Nomad | Copy {{ nomad_install_dc_name }}-server-nomad.pem on nodes"
+      ansible.builtin.copy:
+        src: "{{ nomad_install_tls_ca_host_dir }}/{{ nomad_install_tls_cert_server }}"
+        dest: "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_cert_server }}"
+
+    - name: "Nomad | Copy {{ nomad_install_dc_name }}-server-nomad.pem on nodes"
+      ansible.builtin.copy:
+        src: "{{ nomad_install_tls_ca_host_dir }}/{{ nomad_install_tls_privatekey_server }}"
+        dest: "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_privatekey_server }}"
+  when: nomad_node_role == 'server' or nomad_node_role == 'both'
+
+- block:
+    - name: "Nomad | Copy {{ nomad_install_dc_name }}-client-nomad.pem on nodes"
+      ansible.builtin.copy:
+        src: "{{ nomad_install_tls_ca_host_dir }}/{{ nomad_install_tls_cert_client }}"
+        dest: "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_cert_client }}"
+
+    - name: "Nomad | Copy {{ nomad_install_dc_name }}-client-nomad.pem on nodes"
+      ansible.builtin.copy:
+        src: "{{ nomad_install_tls_ca_host_dir }}/{{ nomad_install_tls_privatekey_client }}"
+        dest: "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_privatekey_client }}"
+  when: nomad_node_role == 'client'
+
+- block:
+    - name: "Nomad | Copy {{ nomad_install_vault_tls_cert }}"
+      ansible.builtin.copy:
+        src: "{{ nomad_install_tls_ca_host_dir }}/{{ nomad_install_vault_tls_cert }}"
+        dest: "{{ nomad_install_vault_tls_host_certificate_dir }}/{{ nomad_install_vault_tls_cert }}"
+
+    - name: "Nomad | Copy {{ nomad_install_vault_tls_privatekey }}"
+      ansible.builtin.copy:
+        src: "{{ nomad_install_tls_ca_host_dir }}/{{ nomad_install_vault_tls_privatekey }}"
+        dest: "{{ nomad_install_vault_tls_host_certificate_dir }}/{{ nomad_install_vault_tls_privatekey }}"
+  when: nomad_node_role == 'client'

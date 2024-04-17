@@ -4,19 +4,32 @@ app_name: hashistack
 role_user: root
 hero_name: "Armon Dadgar"
 hero_lang: "en"
+ansible_venv_on_target_dir: "/root/hashistack_venv"
+hashistack_timezone: "Europe/Paris"
 
 # Hashistack
-hashistack_access: "cloud" # cloud | onpremise
-check_online_version: true
-# consul_version: 1.15.3
-# vault_version: 1.13.3
-# nomad_version: 1.5.6
+
+hashistack_install_mode: "{% if (ansible_play_hosts | length) == 1 %}single{% elif (ansible_play_hosts | length) > 1 %}cluster{% endif %}"
+hashistack_cluster_name: "hashistack"
 
 hashistack_deploy_dc_name: "dc1"
 
+hashistack_group_vars_dir: "{{ project_dir }}/env/group_vars/{{ hashistack_cluster_name }}"
+
+hashistack_tls: true
+hashistack_acl: true
+
+hashistack_access: "cloud" # cloud | onpremise
+
+# Roles auto-assign
+hashistack_roles_auto_assign: true
+hashistack_server_fault_tolerance: 1
+hashistack_servers_quorum: "{{ hashistack_server_fault_tolerance * 2 + 1 | int }}"
+hashistack_clients_available: "{{ (ansible_play_hosts | length) - hashistack_servers_quorum | int }}"
+
 # TLS
 hashistack_install_tls_ca_host: localhost
-hashistack_install_tls_ca_host_dir: "{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/tls"
+hashistack_install_tls_ca_host_dir: "{% if hashistack_install_mode == 'single' %}{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/tls{% else %}{{ project_dir }}/env/group_vars/{{ hashistack_cluster_name }}/tls{% endif %}"
 hashistack_install_tls_ca_pubkey: "hashistack-ca.pem"
 hashistack_install_tls_ca_privatekey: "hashistack-ca-key.pem"
 hashistack_install_tls_host_certificate_dir: "/etc/ssl/hashistack"

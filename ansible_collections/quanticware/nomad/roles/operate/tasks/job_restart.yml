@@ -1,0 +1,8 @@
+- name: "Nomad operate | Restart job"
+  ansible.builtin.shell: "nomad job restart -yes {{ nomad_job_name }}"
+  environment:
+    NOMAD_ADDR: "{{ nomad_http_scheme }}://{{ nomad_http_ip }}:{{ nomad_http_port }}"
+    NOMAD_TOKEN: "{{ nomad_management_token }}{% endif %}"
+    NOMAD_CLIENT_CERT: "{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_cert }}{% endif %}"
+    NOMAD_CLIENT_KEY: "{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_privatekey }}{% endif %}"
+    NOMAD_CACERT: "{{ nomad_operate_tls_host_certificate_dir }}/{{ nomad_operate_tls_ca_pubkey }}{% endif %}"

@@ -1,27 +1,44 @@
 client {
     enabled = {{ nomad_install_client_enabled }}
 
-    node_class = ""
+
+    state_dir = "{{ nomad_install_state_dir_client }}"
+
+    node_class = "{{ nomad_install_client_node_class }}"
+    node_pool = "{{ nomad_install_client_node_pool }}"
+
     no_host_uuid = {{ nomad_install_client_no_host_uuid }}
 
-    servers = [{% for item in nomad_install_client_servers %}"{{ item }}"{% if not loop.last %}, {% endif %}{% endfor %}]
-
-    server_join {
-      retry_join = [ {% for item in nomad_install_client_server_join %}"{{ item }}"{% if not loop.last %}, {% endif %}{% endfor %} ]
-      retry_max = {{ nomad_install_client_server_join_retry_max }}
-      retry_interval = "{{ nomad_install_client_server_join_retry_interval }}"
+{% for item in nomad_install_client_host_network_list %}
+    host_network "{{ item.name }}"  {
+{% if nomad_install_client_host_network_list is defined and item.interface is defined %}
+      interface = "{{ item.interface }}"
+{% endif %}
+{% if nomad_install_client_host_network_list is defined and item.cidr is defined %}
+      cidr = "{{ item.cidr }}"
+{% endif %}
+{% if nomad_install_client_host_network_list is defined and item.reserved_ports is defined %}
+      reserved_ports = "{{ item.reserved_ports }}"
+{% endif %}
     }
 
+{% endfor %}
+
+
+{% if nomad_install_mode == 'cluster' %}
     drain_on_shutdown {
       deadline           = "{{ nomad_install_client_drain_on_shutdown_deadline }}"
       force              = {{ nomad_install_client_drain_on_shutdown_force }}
       ignore_system_jobs = {{ nomad_install_client_drain_on_shutdown_ignore_system_jobs }}
     }
+{% endif %}
 
     max_kill_timeout = "{{ nomad_install_client_max_kill_timeout }}"
 
-    network_speed = {{ nomad_install_client_network_speed }}
     cpu_total_compute = {{ nomad_install_client_cpu_total_compute }}
+    memory_total_mb = {{ nomad_install_client_memory_total_mb }}
+    disk_total_mb = {{ nomad_install_client_disk_total_mb }}
+    disk_free_mb = {{ nomad_install_client_disk_free_mb }}
 
     gc_interval = "{{ nomad_install_client_gc_interval }}"
     gc_disk_usage_threshold = {{ nomad_install_client_gc_disk_usage_threshold }}

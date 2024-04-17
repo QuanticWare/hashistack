@@ -2,7 +2,7 @@
 # defaults file for operate
 
 # General
-vault_http_scheme: "{% if vault_unsecure == false %}https{% else %}http{% endif %}"
+vault_http_scheme: "{% if vault_tls == true %}https{% else %}http{% endif %}"
 vault_http_ip: "127.0.0.1"
 vault_http_port: 8200
 vault_unsecure: false

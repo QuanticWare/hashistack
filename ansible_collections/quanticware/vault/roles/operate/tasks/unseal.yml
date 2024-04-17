@@ -5,9 +5,9 @@
 - name: Vault Unseal | Seal status
   ansible.builtin.uri:
     url: "{{ vault_http_scheme }}://{{ vault_http_ip }}:{{ vault_http_port }}/v1/sys/seal-status"
-    ca_path: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_ca_pubkey }}"
-    client_cert: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_cert }}"
-    client_key: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_privatekey }}"
+    ca_path: "{% if vault_tls %}{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_ca_pubkey }}{% endif %}"
+    client_cert: "{% if vault_tls %}{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_cert }}{% endif %}"
+    client_key: "{% if vault_tls %}{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_privatekey }}{% endif %}"
     method: GET
     status_code:
       - 200
@@ -16,9 +16,9 @@
 - name: Vault Unseal | Unseal
   ansible.builtin.uri:
     url: "{{ vault_http_scheme }}://{{ vault_http_ip }}:{{ vault_http_port }}/v1/sys/unseal"
-    ca_path: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_ca_pubkey }}"
-    client_cert: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_cert }}"
-    client_key: "{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_privatekey }}"
+    ca_path: "{% if vault_tls %}{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_ca_pubkey }}{% endif %}"
+    client_cert: "{% if vault_tls %}{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_cert }}{% endif %}"
+    client_key: "{% if vault_tls %}{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_privatekey }}{% endif %}"
     method: POST
     body: |
       {

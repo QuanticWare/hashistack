@@ -1,0 +1,21 @@
+- block:
+    - name: "Nomad | Consul ACL | Create Consul policy for Vault"
+      ansible.builtin.import_role:
+        name: "quanticware.consul.operate"
+        tasks_from: policy_create
+      vars:
+        consul_policy_name: nomad-service
+        consul_policy_rules: 'agent_prefix \"\" {\n policy = \"read\"\n }\n \n acl = \"write\"\n \n key_prefix \"\" {\n policy = \"read\"\n }\n \n node_prefix \"\" {\n policy = \"read\"\n }\n \n service_prefix \"\" {\n policy = \"write\"\n }\n'
+
+    - name: "Nomad | Consul Token | Create Consul token for Vault"
+      ansible.builtin.import_role:
+        name: "quanticware.consul.operate"
+        tasks_from: token_create
+      vars:
+        consul_token_name: "nomad"
+        consul_policy_name: "nomad-service"
+  run_once: true
+
+- ansible.builtin.set_fact:
+    consul_nomad_token: "{{ hostvars[groups[nomad_deploy_cluster_name][0]]['consul_nomad_token'] }}"
+  when: nomad_install_mode == 'cluster'

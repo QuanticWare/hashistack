@@ -9,10 +9,9 @@ docker_tcp_listen_address: "127.0.0.1"
 docker_tcp_listen_port: 2376
 
 docker_private_registry_state: false
-docker_private_registry_creds:
-  url: ""
-  username: ""
-  password: ""
+docker_private_registry_url: ""
+docker_private_registry_username: ""
+docker_private_registry_password: ""
 
 # TLS
 # CA

@@ -4,9 +4,10 @@
 app_name: auto-unseal
 role_user: root
 fqdn: "vault"
+ansible_venv_on_target_dir: "/root/hashistack_venv"
 
 # Vault info
-vault_install_http_scheme: "https"
+vault_install_http_scheme: "{% if vault_tls == true %}https{% else %}http{% endif %}"
 vault_install_http_ip: "127.0.0.1"
 vault_install_http_port: 8200
 

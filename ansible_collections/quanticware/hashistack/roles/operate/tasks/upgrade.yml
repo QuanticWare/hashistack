@@ -1,6 +1,4 @@
 ---
-#tasks file for {{ app_name }}
-
 - name: Upgrade Consul
   ansible.builtin.import_role:
     name: quanticware.consul.operate

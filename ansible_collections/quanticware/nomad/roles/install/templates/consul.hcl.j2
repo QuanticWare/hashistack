@@ -1,18 +1,50 @@
 consul {
-    address      = "{{ nomad_install_backend_consul_http_ip }}:{{ nomad_install_backend_consul_http_port }}"
     grpc_address = "{{ nomad_install_backend_consul_http_ip }}:{{ nomad_install_backend_consul_grpc_port }}"
-    ssl = {{ nomad_install_backend_consul_ssl }}
-    grpc_ca_file = "{{ nomad_install_backend_consul_tls_host_certificate_dir }}/{{ nomad_install_backend_consul_tls_ca_pubkey }}"
-    ca_file = "{{ nomad_install_backend_consul_tls_host_certificate_dir }}/{{ nomad_install_backend_consul_tls_ca_pubkey }}"
-    cert_file = "{{ nomad_install_backend_consul_tls_host_certificate_dir }}/{{ nomad_install_backend_consul_tls_cert }}"
-    key_file = "{{ nomad_install_backend_consul_tls_host_certificate_dir }}/{{ nomad_install_backend_consul_tls_privatekey }}"
-    token = "{{ consul_nomad_token | default(ansible_local.consul_nomad_token.consul_nomad_token) }}"
-    server_service_name = "{{ nomad_install_backend_consul_server_service_name }}"
-    client_service_name = "{{ nomad_install_backend_consul_client_service_name }}"
-    tags = {}
-
     auto_advertise = {{ nomad_install_backend_consul_auto_advertise }}
 
     server_auto_join = {{ nomad_install_backend_consul_server_auto_join }}
+    server_service_name = "{{ nomad_install_backend_consul_server_service_name }}"
+
     client_auto_join = {{ nomad_install_backend_consul_client_auto_join }}
+    client_service_name = "{{ nomad_install_backend_consul_client_service_name }}"
+
+{% if nomad_node_role == 'server' %}
+{% if nomad_workload_identity_state == true and nomad_acl == true %}
+    service_identity {
+        aud = ["{{ nomad_install_backend_consul_service_identity_aud }}"]
+        ttl = "{{ nomad_install_backend_consul_service_identity_ttl }}"
+    }
+    task_identity {
+        aud = ["{{ nomad_install_backend_consul_task_identity_aud }}"]
+        ttl = "{{ nomad_install_backend_consul_task_identity_ttl }}"
+    }
+{% elif nomad_workload_identity_state == false and nomad_acl == true  %}
+    token = "{{ consul_nomad_token | default(ansible_local.consul_nomad_token.consul_nomad_token) }}"
+{% endif %}
+
+{% elif nomad_node_role == 'client' %}
+{% if nomad_workload_identity_state == true and nomad_acl == true %}
+    service_auth_method = "{{ nomad_install_backend_consul_binding_nomad_services_name }}"
+    task_auth_method = "{{ nomad_install_backend_consul_binding_nomad_tasks_name }}"
+{% elif nomad_workload_identity_state == false and nomad_acl == true  %}
+    token = "{{ consul_nomad_token | default(ansible_local.consul_nomad_token.consul_nomad_token) }}"
+{% endif %}
+
+{% elif nomad_node_role == 'both' %}
+{% if nomad_workload_identity_state == true and nomad_acl == true %}
+    service_identity {
+        aud = ["{{ nomad_install_backend_consul_service_identity_aud }}"]
+        ttl = "{{ nomad_install_backend_consul_service_identity_ttl }}"
+    }
+    task_identity {
+        aud = ["{{ nomad_install_backend_consul_task_identity_aud }}"]
+        ttl = "{{ nomad_install_backend_consul_task_identity_ttl }}"
+    }
+    service_auth_method = "{{ nomad_install_backend_consul_binding_nomad_services_name }}"
+    task_auth_method = "{{ nomad_install_backend_consul_binding_nomad_tasks_name }}"
+{% elif nomad_workload_identity_state == false and nomad_acl == true  %}
+    token = "{{ consul_nomad_token | default(ansible_local.consul_nomad_token.consul_nomad_token) }}"
+{% endif %}
+{% endif %}
+
 }

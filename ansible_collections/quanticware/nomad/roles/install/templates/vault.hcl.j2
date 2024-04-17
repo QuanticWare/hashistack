@@ -1,15 +1,56 @@
 vault {
-    enabled = true
-    address = "{{ nomad_install_backend_vault_http_scheme }}://{{ nomad_install_backend_vault_http_ip }}:{{ nomad_install_backend_vault_http_port }}"
-    allow_unauthenticated = true
-    create_from_role = "{{ nomad_install_vault_create_from_role }}"
-    task_token_ttl = ""
-    ca_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_ca_pubkey }}"
-    ca_path = "{{ nomad_install_tls_host_certificate_dir }}"
-    cert_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_vault_tls_cert }}"
-    key_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_vault_tls_privatekey }}"
-    tls_server_name = ""
-    tls_skip_verify = {{ nomad_install_vault_tls_skip_verify }}
-    namespace = ""
-    token = "{{ vault_new_token_result.json.auth.client_token | default(ansible_local.vault_nomad_token.vault_nomad_token) }}"
+  enabled = true
+  create_from_role = "{{ nomad_install_vault_create_from_role }}"
+
+{% if nomad_node_role == 'server'  %}
+{% if nomad_workload_identity_state == true  %}
+  default_identity {
+    aud = ["{{ nomad_install_vault_identity_aud }}"]
+    env  = {{ nomad_install_vault_identity_env }}
+    file = {{ nomad_install_vault_identity_file }}
+    ttl = "{{ nomad_install_vault_identity_ttl }}"
+  }
+{% else %}
+  token = "{{ vault_new_token_result.json.auth.client_token | default(vault_nomad_token) }}"
+  task_token_ttl = ""
+{% endif %}
+
+{% elif nomad_node_role == 'client' %}
+  address = "{{ nomad_install_backend_vault_http_scheme }}://{{ nomad_install_backend_vault_http_ip }}:{{ nomad_install_backend_vault_http_port }}"
+{% if nomad_workload_identity_state == true  %}
+  jwt_auth_backend_path = "{{ nomad_install_vault_auth_method_path }}"
+{% else %}
+  token = "{{ vault_new_token_result.json.auth.client_token | default(vault_nomad_token) }}"
+  task_token_ttl = ""
+{% endif %}
+
+
+{% elif nomad_node_role == 'both'%}
+{% if nomad_workload_identity_state == true  %}
+  default_identity {
+    aud = ["{{ nomad_install_vault_identity_aud }}"]
+    env  = {{ nomad_install_vault_identity_env }}
+    file = {{ nomad_install_vault_identity_file }}
+    ttl = "{{ nomad_install_vault_identity_ttl }}"
+  }
+{% else %}
+  token = "{{ vault_new_token_result.json.auth.client_token | default(vault_nomad_token) }}"
+  task_token_ttl = ""
+{% endif %}
+  address = "{{ nomad_install_backend_vault_http_scheme }}://{{ nomad_install_backend_vault_http_ip }}:{{ nomad_install_backend_vault_http_port }}"
+{% if nomad_workload_identity_state == true  %}
+  jwt_auth_backend_path = "{{ nomad_install_vault_auth_method_path }}"
+{% endif %}
+
+{% endif %}
+
+{% if nomad_tls == true  %}
+  ca_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_ca_pubkey }}"
+  ca_path = "{{ nomad_install_tls_host_certificate_dir }}"
+  cert_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_vault_tls_cert }}"
+  key_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_vault_tls_privatekey }}"
+  tls_server_name = ""
+  tls_skip_verify = {{ nomad_install_vault_tls_skip_verify }}
+{% endif %}
+  namespace = ""
 }

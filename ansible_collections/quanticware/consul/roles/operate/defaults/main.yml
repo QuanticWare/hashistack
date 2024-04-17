@@ -2,9 +2,9 @@
 # defaults file for operate
 
 # General
-consul_http_scheme: "https"
+consul_http_scheme: "{% if consul_tls == true %}https{% else %}http{% endif %}"
 consul_http_ip: "127.0.0.1"
-consul_http_port: "8501"
+consul_http_port: "{% if consul_tls == true %}8501{% else %}8500{% endif %}"
 
 check_online_version: true
 consul_config_file: "/etc/consul.d/config.json"
@@ -16,6 +16,8 @@ consul_version: 1.16.2
 
 binary_path: "/usr/bin"
 consul_path: "{{ binary_path }}"
+
+# hashistack_creds_file: "{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/hashistack.yml"
 
 # TLS
 consul_operate_tls_ca_host: localhost

@@ -1,11 +1,14 @@
 - name: "CNI | Create directory for bin"
   ansible.builtin.file:
-    path: "/opt/cni/bin"
+    path: "{{ item }}"
     state: directory
     mode: '0755'
     recurse: yes
     owner: "{{ role_user }}"
     group: "{{ role_user }}"
+  loop:
+  - /opt/cni/bin
+  - /opt/cni/config
   when: cni_install.stat.exists == false
 
 - name: "CNI | Retreive GitHub latest version"
@@ -22,19 +25,11 @@
     msg:
     - "CNI: version {{ cni_version }}"
 
-- name: "CNI | Unarchive plugin CNI for AMD64"
+- name: "CNI | Unarchive plugin CNI for {{ go_arch | upper }}"
   ansible.builtin.unarchive:
-    src: https://github.com/containernetworking/plugins/releases/download/{{ tag.json.tag_name }}/cni-plugins-linux-amd64-{{ tag.json.tag_name }}.tgz
+    src: https://github.com/containernetworking/plugins/releases/download/{{ tag.json.tag_name }}/cni-plugins-linux-{{ go_arch }}-{{ tag.json.tag_name }}.tgz
     dest: /opt/cni/bin
     remote_src: yes
-  when: ansible_architecture == "x86_64"
-
-- name: "CNI | Unarchive plugin CNI for ARM64"
-  ansible.builtin.unarchive:
-    src: https://github.com/containernetworking/plugins/releases/download/{{ tag.json.tag_name }}/cni-plugins-linux-arm64-{{ tag.json.tag_name }}.tgz
-    dest: /opt/cni/bin
-    remote_src: yes
-  when: ansible_architecture == "aarch64"
 
 - name: "CNI | Add to sysctl"
   ansible.posix.sysctl:

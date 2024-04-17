@@ -8,7 +8,7 @@ Only single node currently
 
 Ansible run action to operate with Nomad API HTTP
 
-create_job: Send job to Nomad API HTTP after convert HCL job file to json
+job_create: Send job to Nomad API HTTP after convert HCL job file to json
 
 To be use only with `quanticware.deploy` role
 
@@ -27,7 +27,7 @@ To run job:
 - name: "Deploy {{ app_name }} | Submit Job"
   ansible.builtin.import_role:
     name: quanticware.nomad.operate
-    tasks_from: create_job
+    tasks_from: job_create
 ```
 
 To find alloc ID

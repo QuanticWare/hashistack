@@ -1,13 +1,13 @@
 - name: "Consul Operate | Register service {{ consul_service_name }}"
   ansible.builtin.uri:
     url: "{{ consul_http_scheme }}://{{ consul_http_ip }}:{{ consul_http_port }}/v1/agent/service/register"
-    ca_path: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_ca_pubkey }}"
-    client_cert: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_cert }}"
-    client_key: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_privatekey }}"
+    ca_path: "{% if consul_tls %}{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_ca_pubkey }}{% endif %}"
+    client_cert: "{% if consul_tls %}{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_cert }}{% endif %}"
+    client_key: "{% if consul_tls %}{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_privatekey }}{% endif %}"
     method: PUT
     body_format: json
     body: "{{ lookup('ansible.builtin.template','service_register.json.j2') }}"
     headers:
-      X-Consul-Token: "{{ consul_acl_master_token | default(consul_master_token) }}"
+      X-Consul-Token: "{% if consul_acl %}{{ consul_global_management_token | default(consul_master_token) }}"
     status_code:
         - 200

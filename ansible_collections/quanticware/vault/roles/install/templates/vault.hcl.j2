@@ -1,11 +1,12 @@
+cluster_addr = "{{ vault_install_cluster_addr }}"
+api_addr = "{{ vault_install_api_addr }}"
+disable_mlock = "{{ vault_install_disable_mlock }}"
+
 cluster_name = "{{ vault_install_dc_name }}"
 max_lease_ttl = "{{ vault_install_max_lease_ttl }}"
 default_lease_ttl = "{{ vault_install_default_lease_ttl }}"
 
-disable_clustering = "{{ vault_install_disable_clustering }}"
-cluster_addr = "{{ vault_install_cluster_addr }}"
-api_addr = "{{ vault_install_api_addr }}"
-disable_mlock = "{{ vault_install_disable_mlock }}"
+disable_clustering = "{% if (ansible_play_hosts | length) == 1 %}true{% elif (ansible_play_hosts | length) > 1 %}false{% endif %}"
 
 log_file = "{{ vault_install_log_file }}"
 log_level = "{{ vault_install_log_level }}"
@@ -15,41 +16,75 @@ log_rotate_max_files = {{ vault_install_log_rotate_max_files }}
 
 listener "tcp" {
   address = "{{ vault_install_listener_tcp_address }}"
-  cluster_address = "{{ vault_install_listener_tcp_cluster_address }}"
-  tls_client_ca_file="{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}"
+{% if vault_tls == true %}
+  tls_client_ca_file= "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}"
   tls_cert_file = "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_cert }}"
   tls_key_file = "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_privatekey }}"
   tls_min_version  = "{{ vault_install_tls_min_version }}"
   tls_disable = "{{ vault_install_tls_disable | lower }}"
+{% else %}
+  tls_disable = "true"
+ {% endif %}
+  telemetry {
+    unauthenticated_metrics_access = {{ vault_install_prometheus_unauthenticated_metrics_access }}
+  }
 }
 
-backend "consul" {
-  address = "{{ vault_install_backend_consul_http_ip }}:{{ vault_install_backend_consul_http_port }}"
-  path = "{{ vault_install_backend_consul_path }}"
-  service = "{{ vault_install_backend_consul_service }}"
-  token = "{{ consul_vault_token | default(ansible_local.consul_vault_token.consul_vault_token) }}"
-  scheme = "{{ vault_install_backend_consul_http_scheme }}"
-  tls_ca_file="{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}"
-  tls_cert_file = "{{ vault_install_tls_host_certificate_dir }}/dc1-server-consul.pem"
-  tls_key_file = "{{ vault_install_tls_host_certificate_dir }}/dc1-server-consul.key"
-}
-
+{% if vault_install_mode == 'cluster' %}
 service_registration "consul" {
-  address = "{{ vault_install_backend_consul_http_ip }}:{{ vault_install_backend_consul_http_port }}"
-  check_timeout = "{{ vault_install_backend_consul_check_timeout }}"
-  disable_registration = "{{ vault_install_backend_consul_disable_registration }}"
-  scheme = "{{ vault_install_backend_consul_http_scheme }}"
-  service = "{{ vault_install_backend_consul_service }}"
+  address      = "{{ vault_install_consul_http_scheme }}://{{ vault_install_consul_http_ip }}:{{ vault_install_consul_http_port }}"
+  check_timeout = "{{ vault_install_consul_check_timeout }}"
+  disable_registration = "{{ vault_install_consul_disable_registration }}"
+  scheme = "{{ vault_install_consul_http_scheme }}"
+  service = "{{ vault_install_consul_service }}"
   service_tags = ""
-  token = "{{ consul_vault_token | default(ansible_local.consul_vault_token.consul_vault_token) }}"
-  tls_ca_file="{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}"
-  tls_cert_file = "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_backend_consul_tls_cert }}"
-  tls_key_file = "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_backend_consul_tls_privatekey }}"
-  tls_min_version = "{{ vault_install_backend_consul_tls_min_version }}"
-  tls_skip_verify = "{{ vault_install_backend_consul_tls_skip_verify }}"
+  service_address = ""
+{% if vault_acl == true %}
+  token = "{{ consul_vault_token }}"
+{% endif %}
+{% if vault_tls == true %}
+  tls_ca_file= "{{ vault_install_consul_tls_host_certificate_dir }}/{{ vault_install_consul_tls_ca_pubkey }}"
+{% if consul_node_role == 'server' or consul_node_role == 'both' %}
+  tls_cert_file = "{{ vault_install_consul_tls_host_certificate_dir }}/{{ vault_install_consul_tls_cert_server }}"
+  tls_key_file = "{{ vault_install_consul_tls_host_certificate_dir }}/{{ vault_install_consul_tls_privatekey_server }}"
+{% elif consul_node_role == 'client' %}
+  tls_cert_file = "{{ vault_install_consul_tls_host_certificate_dir }}/{{ vault_install_consul_tls_cert_client }}"
+  tls_key_file = "{{ vault_install_consul_tls_host_certificate_dir }}/{{ vault_install_consul_tls_privatekey_client }}"
+{% endif %}
+  tls_min_version  = "{{ vault_install_tls_min_version }}"
+  tls_skip_verify = "{{ vault_install_consul_tls_skip_verify }}"
+{% endif %}
 }
+{% endif %}
+
+
+{% if (ansible_play_hosts | length) == 1 %}
+storage "file" {
+  path = "{{ vault_install_storage_dir }}"
+}
+
+{% elif (ansible_play_hosts | length) > 1 %}
+storage "raft" {
+  path    = "{{ vault_install_storage_dir }}"
+  node_id = "{{ inventory_hostname }}"
+
+{% for host in groups[vault_deploy_cluster_name] %}
+  retry_join {
+    leader_api_addr         = "{{ vault_install_http_scheme }}://{{ hostvars[host]['ansible_' + hostvars[host].vault_iface].ipv4.address }}:{{ vault_install_http_port }}"
+{% if vault_tls == true %}
+    leader_tls_servername   = "{{ host }}.{{ vault_install_dc_name }}.vault"
+    leader_ca_cert_file     = "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_ca_pubkey }}"
+    leader_client_cert_file = "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_cert }}"
+    leader_client_key_file  = "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_privatekey }}"
+{% endif %}
+  }
+{% endfor %}
+
+}
+{% endif %}
 
 telemetry {
+    disable_hostname = {{ vault_install_telemetry_disable_hostname }}
     prometheus_retention_time = "{{ vault_install_prometheus_retention_time }}"
 }
 

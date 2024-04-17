@@ -1,0 +1,18 @@
+- name: "Vault | Commons tasks | Install requiered OS packages"
+  ansible.builtin.apt:
+    update_cache: true
+    pkg: ufw
+
+- name: "Vault | Firewall | Open ports for Vault Servers"
+  community.general.ufw:
+    rule: allow
+    interface: "{{ vault_install_cluster_bridge }}"
+    direction: "{{ item.direction }}"
+    proto: "{{ item.proto }}"
+    port: "{{ item.port }}"
+  loop:
+    - { proto: "tcp", port: "8200", direction: "in" }
+    - { proto: "tcp", port: "8200", direction: "out" }
+    - { proto: "tcp", port: "8201", direction: "in" }
+    - { proto: "tcp", port: "8201", direction: "out" }
+  when: vault_node_role == 'server'

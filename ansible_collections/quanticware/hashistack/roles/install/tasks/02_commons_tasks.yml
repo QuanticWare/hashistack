@@ -1,0 +1,84 @@
+- name: "Hashistack | Commons tasks | Create ansible facts directory"
+  ansible.builtin.file:
+    path: "/etc/ansible/facts.d"
+    state: directory
+    mode: '0700'
+    owner: "root"
+    group: "root"
+
+- name: "Hashistack | Commons tasks | Create TLS directory"
+  ansible.builtin.file:
+    path: "/etc/ssl/hashistack"
+    state: directory
+    mode: '0755'
+    owner: "root"
+    group: "root"
+  when: hashistack_tls == true
+
+- name: "Hashistack | Commons tasks | Create group_vars directory"
+  ansible.builtin.file:
+    path: "{{ hashistack_group_vars_dir }}"
+    state: directory
+  delegate_to: localhost
+  become: false
+  run_once: true
+  when: hashistack_install_mode == 'cluster'
+
+- name: "Hashistack | Commons tasks | Set-Timezone"
+  community.general.timezone:
+    name: "{{ hashistack_timezone }}"
+    hwclock: local
+
+- name: "Hashistack | Commons tasks | Update APT Cache"
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: "Hashistack | Commons tasks | Install requiered OS packages"
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+    - python3-pip
+    - python3-venv
+    - pipx
+    - jq
+
+- name: "Hashistack | Commons tasks | Create venv for Hashistack installation"
+  ansible.builtin.pip:
+    name: "{{ item }}"
+    virtualenv: "{{ ansible_venv_on_target_dir }}"
+    virtualenv_command: "/usr/bin/python3 -m venv"
+  loop:
+  - ansible
+  - passlib
+  - python-nomad
+  - python-consul
+  - python-debian
+
+- name: "Hashistack | Commons tasks | Set Ansible Python Interpreter for Hashistack installation"
+  ansible.builtin.set_fact:
+    ansible_python_interpreter: "{{ ansible_venv_on_target_dir }}/bin/python"
+
+- name: "Hashistack | Commons tasks | Add Hashicorp Stable APT repository"
+  ansible.builtin.deb822_repository:
+    name: hashicorp
+    types: [deb]
+    uris: "https://apt.releases.hashicorp.com"
+    signed_by: "https://apt.releases.hashicorp.com/gpg"
+    suites: ["{{ ansible_distribution_release|lower }}"]
+    components: [main]
+    state: present
+    enabled: yes
+
+- name: "Hashistack | Commons tasks | Update APT Cache"
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 432000
+
+- name: "Hashistack | Commons tasks | Check if TLS CA exists"
+  ansible.builtin.stat:
+    path: "{{ hashistack_install_tls_ca_host_dir }}/{{ hashistack_install_tls_ca_privatekey }}"
+  register: cert_ca_tls_priv_present
+  become: false
+  run_once: true
+  delegate_to: localhost
+  when: hashistack_tls == true
