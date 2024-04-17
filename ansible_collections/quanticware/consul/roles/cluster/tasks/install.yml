@@ -2,13 +2,6 @@
   ansible.builtin.apt:
     name: consul
     update_cache: yes
-  when: consul_install_version is not defined
-
-- name: "Consul Install | Install binary"
-  ansible.builtin.apt:
-    name: "consul={{ consul_install_version }}-1"
-    update_cache: yes
-  when: consul_install_version is defined
 
 - name: "Consul Install | Prevent Consul from being upgraded"
   ansible.builtin.dpkg_selections:

@@ -13,6 +13,7 @@
             "Address": "{{ consul_service_address }}",
             "Port": {{ consul_service_port }}
         }
+{% if traefik_tags == true %}
     },
     "Tags": [
         "traefik.enable=true",
@@ -83,4 +84,7 @@
 {% endif %}
         "app_name={{ app_name }}"
     ]
+{% else %}
+    }
+{% endif %}
 }

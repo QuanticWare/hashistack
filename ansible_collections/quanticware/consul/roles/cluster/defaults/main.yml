@@ -96,7 +96,7 @@ consul_install_autopilot_server_stabilization_time: "10s"
 
 # TLS
 consul_install_tls_ca_host: localhost
-consul_install_tls_ca_host_dir: "{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/tls"
+consul_install_tls_ca_host_dir: "{{ project_dir }}/env/host_vars/{{ consul_install_dc_name }}/tls"
 consul_install_tls_ca_pubkey: "hashistack-ca.pem"
 consul_install_tls_ca_privatekey: "hashistack-ca-key.pem"
 consul_install_tls_ca_provider: "ownca"
@@ -109,7 +109,7 @@ consul_install_tls_cert: "{{ consul_install_dc_name }}-server-consul.pem"
 consul_install_tls_privatekey: "{{ consul_install_dc_name }}-server-consul.key"
 
 consul_install_tls_common_name: "*.{{ consul_install_dc_name }}.consul"
-consul_install_tls_subject_alt_name: "DNS:localhost,IP:127.0.0.1,IP:172.17.0.1,DNS:server.dc1.consul"
+consul_install_tls_subject_alt_name: "DNS:localhost,IP:127.0.0.1,IP:172.17.0.1,DNS:server.{{ consul_install_dc_name }}.consul"
 
 consul_install_tls_tls_min_version: "TLSv1_2"
 consul_install_tls_verify_incoming: "true"
@@ -121,7 +121,7 @@ consul_install_tls_internal_rpc_verify_server_hostname: "true"
 
 # Envoy
 consul_install_envoy_tls_ca_host: localhost
-consul_install_envoy_tls_ca_host_dir: "{{ project_dir }}/env/host_vars/{{ inventory_hostname }}/tls"
+consul_install_envoy_tls_ca_host_dir: "{{ project_dir }}/env/host_vars/{{ consul_install_dc_name }}/tls"
 consul_install_envoy_tls_ca_pubkey: "envoy-ca.pem"
 consul_install_envoy_tls_ca_privatekey: "envoy-ca-key.pem"
 consul_install_envoy_tls_ca_provider: "ownca"
@@ -139,7 +139,6 @@ consul_install_envoy_tls_subject_alt_name: "DNS:localhost,IP:127.0.0.1,IP:172.17
 consul_install_envoy_tls_grpc_verify_incoming: true
 
 # Telemetry
-consul_install_telemetry_disable_hostname: "false"
 consul_install_prometheus_retention_time: "24h"
 
 # UI Config

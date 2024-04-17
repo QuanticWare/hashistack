@@ -24,6 +24,10 @@ nomad_install_disable_update_check: "false"
 nomad_install_leave_on_terminate: true
 nomad_install_leave_on_interrupt: true
 
+# Network
+nomad_install_bridge_list:
+- { name: "br0", ip_range: "172.18.0.1/16" }
+
 # Log
 nomad_install_debug: "false"
 nomad_install_log_file: "/var/log/nomad/nomad.log"
@@ -68,6 +72,12 @@ nomad_install_docker_client_allow_caps:
 - sys_ptrace
 - sys_admin
 
+nomad_install_docker_private_registry_state: false
+nomad_install_docker_private_registry_url: ""
+nomad_install_docker_private_registry_username: ""
+nomad_install_docker_private_registry_password: ""
+nomad_install_docker_private_registry_config: "{{ nomad_config_dir }}/docker_config.json"
+
 # Addresses
 nomad_iface: "{{ ansible_default_ipv4.interface }}"
 nomad_bind_address: "{% if nomad_install_mode == 'single_node' %}127.0.0.1{% else %}{{ hostvars[inventory_hostname]['ansible_'+ nomad_iface | replace('-', '_')]['ipv4']['address'] }}{% endif %}"
@@ -110,6 +120,11 @@ nomad_install_client_enabled: "true"
 #nomad_install_client_node_class: ""
 nomad_install_client_no_host_uuid: "false"
 nomad_install_client_max_kill_timeout: "30s"
+
+nomad_install_client_host_network_list:
+- { name: "public", interface: "{{ ansible_default_ipv4.interface }}" }
+- { name: "private", interface: "{{ nomad_install_bridge_list | map(attribute='name') | first }}" }
+
 
 nomad_install_client_servers:
 - 127.0.0.1:4647
@@ -196,6 +211,8 @@ nomad_install_backend_vault_http_port: 8200
 nomad_install_vault_create_from_role: "nomad-cluster"
 nomad_install_vault_tls_skip_verify: "false"
 
+nomad_install_vault_tls_host_certificate_dir: "/etc/ssl/hashistack"
+nomad_install_vault_consul_tls_ca_pubkey: "hashistack-ca.pem"
 nomad_install_vault_tls_cert: "{{ nomad_install_dc_name }}-server-vault.pem"
 nomad_install_vault_tls_privatekey: "{{ nomad_install_dc_name }}-server-vault.key"
 
@@ -216,10 +233,10 @@ nomad_install_podman_volume_enabled: "true"
 
 # Telemetry
 nomad_install_telemetry_disable_hostname: "false"
-nomad_install_telemetry_collection_interval: "1s"
+nomad_install_telemetry_collection_interval: "5s"
 nomad_install_telemetry_use_node_name: "false"
-nomad_install_telemetry_publish_allocation_metrics: "false"
-nomad_install_telemetry_publish_node_metrics: "false"
+nomad_install_telemetry_publish_allocation_metrics: "true"
+nomad_install_telemetry_publish_node_metrics: "true"
 nomad_install_telemetry_filter_default: "true"
 # nomad_install_telemetry_prefix_filter:
 nomad_install_telemetry_disable_dispatched_job_summary_metrics: "false"

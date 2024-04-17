@@ -21,6 +21,9 @@ listener "tcp" {
   tls_key_file = "{{ vault_install_tls_host_certificate_dir }}/{{ vault_install_tls_privatekey }}"
   tls_min_version  = "{{ vault_install_tls_min_version }}"
   tls_disable = "{{ vault_install_tls_disable | lower }}"
+  telemetry {
+    unauthenticated_metrics_access = {{ vault_install_prometheus_unauthenticated_metrics_access }}
+  }
 }
 
 backend "consul" {
@@ -50,6 +53,7 @@ service_registration "consul" {
 }
 
 telemetry {
+    disable_hostname = {{ vault_install_telemetry_disable_hostname }}
     prometheus_retention_time = "{{ vault_install_prometheus_retention_time }}"
 }
 

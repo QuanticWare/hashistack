@@ -35,8 +35,8 @@
 - name: "Vault Unseal | Add vault-unseal.service wait to Nomad the systemd unit file"
   ansible.builtin.lineinfile:
     path: /lib/systemd/system/nomad.service
-    regexp: "^After=network-online.target"
-    line: "After=network-online.target vault-unseal.service"
+    insertafter: 'After=consul.service'
+    line: 'After=vault-unseal.service'
   when: nomad_binary.stat.exists == true
 
 - name: "Vault Unseal | Register systemd service"

@@ -22,6 +22,9 @@
   when: cert_tls_present.stat.exists == false or
         (cert_tls_present.stat.exists == true and tls_check.valid_at.delay == false)
 
+- name: "Nomad | Network configuration"
+  ansible.builtin.include_tasks: "network.yml"
+
 - name: "Nomad | Consul ACL creation"
   ansible.builtin.include_tasks: "consul_acl.yml"
 
@@ -36,6 +39,9 @@
 
 - name: "Nomad | ACL Configuration"
   ansible.builtin.include_tasks: "acl.yml"
+
+- name: "Nomad | Change SystemD configuration"
+  ansible.builtin.include_tasks: "systemd_tuning.yml"
 
 - name: "Nomad | Install Nomad Auto Eligibility Node"
   ansible.builtin.import_role:

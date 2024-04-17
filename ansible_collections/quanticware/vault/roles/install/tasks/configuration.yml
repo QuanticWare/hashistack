@@ -127,6 +127,16 @@
         replace: '"'
   when: ansible_local_facts_vault_file.stat.exists == False
 
+- name: "Vault configuration | Change systemunit start order (After Consul)"
+  ansible.builtin.lineinfile:
+    path: /lib/systemd/system/vault.service
+    regexp: "^After=network-online.target"
+    line: "After=consul.service"
+
+- name: "Vault configuration | Daemon reload systemd"
+  ansible.builtin.systemd:
+    daemon_reload: true
+
 - name: "Vault Configuration | Reload local facts to configure Vault Configuration"
   ansible.builtin.setup:
     filter: ansible_local

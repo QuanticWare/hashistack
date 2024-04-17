@@ -9,7 +9,7 @@ consul {
     token = "{{ consul_nomad_token | default(ansible_local.consul_nomad_token.consul_nomad_token) }}"
     server_service_name = "{{ nomad_install_backend_consul_server_service_name }}"
     client_service_name = "{{ nomad_install_backend_consul_client_service_name }}"
-    tags = {}
+    tags = []
 
     auto_advertise = {{ nomad_install_backend_consul_auto_advertise }}
 

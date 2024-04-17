@@ -48,26 +48,26 @@ acl {
 }
 
 telemetry {
-    disable_hostname = "{{ nomad_install_telemetry_disable_hostname }}"
+    disable_hostname = {{ nomad_install_telemetry_disable_hostname }}
     collection_interval = "{{ nomad_install_telemetry_collection_interval }}"
-    use_node_name = "{{ nomad_install_telemetry_use_node_name }}"
-    publish_allocation_metrics = "{{ nomad_install_telemetry_publish_allocation_metrics }}"
-    publish_node_metrics = "{{ nomad_install_telemetry_publish_node_metrics }}"
-    filter_default = "{{ nomad_install_telemetry_filter_default }}"
+    use_node_name = {{ nomad_install_telemetry_use_node_name }}
+    publish_allocation_metrics = {{ nomad_install_telemetry_publish_allocation_metrics }}
+    publish_node_metrics = {{ nomad_install_telemetry_publish_node_metrics }}
+    filter_default = {{ nomad_install_telemetry_filter_default }}
     prefix_filter = []
-    disable_dispatched_job_summary_metrics = "{{ nomad_install_telemetry_disable_dispatched_job_summary_metrics }}"
+    disable_dispatched_job_summary_metrics = {{ nomad_install_telemetry_disable_dispatched_job_summary_metrics }}
     statsite_address = ""
     statsd_address = ""
     datadog_address = ""
     datadog_tags = []
-    prometheus_metrics = "{{ nomad_install_telemetry_prometheus_metrics }}"
+    prometheus_metrics = {{ nomad_install_telemetry_prometheus_metrics }}
     circonus_api_token = ""
     circonus_api_app = "{{ nomad_install_telemetry_circonus_api_app }}"
     circonus_api_url = "{{ nomad_install_telemetry_circonus_api_url }}"
     circonus_submission_interval = "{{ nomad_install_telemetry_circonus_submission_interval }}"
     circonus_submission_url = ""
     circonus_check_id = ""
-    circonus_check_force_metric_activation = "{{ nomad_install_telemetry_circonus_check_force_metric_activation }}"
+    circonus_check_force_metric_activation = {{ nomad_install_telemetry_circonus_check_force_metric_activation }}
     circonus_check_instance_id = ""
     circonus_check_search_tag = ""
     circonus_check_display_name = ""

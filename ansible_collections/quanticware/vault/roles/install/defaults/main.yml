@@ -74,4 +74,6 @@ vault_install_backend_consul_tls_min_version: "tls12"
 vault_install_backend_consul_tls_skip_verify: "false"
 
 # Telemetry
+vault_install_telemetry_disable_hostname: "false"
 vault_install_prometheus_retention_time: "24h"
+vault_install_prometheus_unauthenticated_metrics_access: "true"

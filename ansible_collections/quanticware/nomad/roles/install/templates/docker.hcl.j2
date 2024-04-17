@@ -12,6 +12,12 @@ plugin "docker" {
     	endpoint = "unix:///var/run/docker.sock"
 {% endif %}
 
+{% if nomad_install_docker_private_registry_state == true %}
+        auth {
+            config = "{{ nomad_install_docker_private_registry_config }}"
+        }
+{% endif %}
+
         allow_privileged = {{ nomad_install_docker_allow_privileged }}
 
         volumes {
