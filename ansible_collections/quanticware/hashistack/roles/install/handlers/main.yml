@@ -1,7 +1,0 @@
----
-# handlers file for hashistack
-
-- name: nomad_restart
-  systemd:
-    name: nomad
-    state: restarted

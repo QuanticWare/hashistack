@@ -1,9 +1,0 @@
-network:
-  version: 2
-  bridges:
-{% for item in nomad_install_bridge_list %}
-    {{ item.name }}:
-      addresses: [{{ item.ip_range }}]
-      dhcp4: no
-      dhcp6: no
-{% endfor %}

@@ -1,6 +1,0 @@
----
-# defaults file for operate
-
-# General
-
-docker_operate_image: ""

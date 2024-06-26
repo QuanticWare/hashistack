@@ -1,9 +1,0 @@
----
-# defaults file for podman
-app_name: podman
-role_user: root
-
-# Podman vars
-podman_buildtags: "apparmor seccomp"
-podman_rootless: true
-podman_user: "podman"

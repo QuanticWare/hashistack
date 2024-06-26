@@ -1,9 +1,0 @@
-plugin "nomad-driver-podman" {
-config {
-    socket_path = "unix://{{ ansible_local.podman_rootless.podman_socket }}"
-    disable_log_collection = true # Dirty fix: https://github.com/hashicorp/nomad-driver-podman/issues/189
-    volumes {
-    enabled      = {{ nomad_install_podman_volume_enabled }}
-    }
-  }
-}
