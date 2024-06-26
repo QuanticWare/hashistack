@@ -6,17 +6,38 @@ Bonjour :wave:
 
 With minimals `SSH` and `Ansible` Knowledges.
 
+Ansible requiered collections:
+* `ansible-galaxy collection install ansible.netcommon`
+* `ansible-galaxy collection install ansible.utils`
+* `ansible-galaxy collection install community.general`
+
+&nbsp;
+
+For Hashistack Cluster installation, create bridge for internals communications. By default, bridge named `br0` is used for installation.
+
+Refer in Nomad collection, the [Network Tasks](https://git.quanticware.com/quanticware/hashistack/src/branch/main/ansible_collections/quanticware/nomad/roles/install/tasks/04_network.yml) for example.
+
+&nbsp;
+
 ```sh
-git clone https://github.com/QuanticWare/hashistack.git
+git clone https://git.quanticware.com/quanticware/hashistack.git
 ```
 
-* Adapt variables `project_dir` in `env/group_vars/all.yml`
-* Rename directory `hosttarget` in `env/host_vars` directory.
-* Update variables in `env/host_vars/$HOSTTARGET/all.yml`
-* Update `env/inventory.ini`
-* Run `ansible-playbook playbook/hashistack.yml`
+&nbsp;
 
-After installation. Find all news credentials in `env/host_vars/$HOSTTARGET/hashistack.yml` .
+* Adapt variables `project_dir` in `env/group_vars/all.yml`
+* Update inventory directories for each node
+* Update variables in `env/host_vars/$HOSTTARGET/all.yml` for each node
+* Update `env/inventory.ini`
+* Update `hosts:` according to your inventory in playbooks in playbook directory
+* Run `ansible-playbook playbook/hashistack_single_node.yml`
+* Or Run `ansible-playbook playbook/hashistack_cluster.yml`
+
+&nbsp;
+
+After installation. Find all news credentials in `env/host_vars/$HOSTTARGET/hashistack.yml` for single node mode or `env/group_vars/$GROUP/hashistack.yml` for cluster.
+
+&nbsp;
 
 Run
 ```sh
@@ -38,12 +59,6 @@ It's a stack of services developed by [HashiCorp](https://www.hashicorp.com) to 
 * [Nomad](https://www.nomadproject.io) : workload orchestrator to deploy and manage
 * [Consul](https://www.consul.io) : like a network directory to connect apps with service mesh
 * [Vault](https://www.vaultproject.io) : secrets manager
-
-### CAVEAT:
-
-For now, this project is used to install Hashistack in single mode, only on single host, like one VM, one Baremetal etc. Great for home lab and play with Consul, Nomad, Vault.
-
-Cluster mode feature will be added soon (current of this century).
 
 &nbsp;
 
@@ -67,6 +82,7 @@ Ansible will do for you:
 * Install Vault with ACL/TLS support
 * Install Nomad with ACL/TLS support
 * Configure firewall to open ports 22,80,443
+* Configure firewall to open ports for cluster
 * Quote a great philosopher
 
 &nbsp;
@@ -121,6 +137,46 @@ Now, go into `env/host_vars` folder. You will see a folder named `hosttarget` yo
 Update `$IP`, `$USER` from  `all.yml` as well.
 Update `env/inventory.ini`, change `hosttarget`variable.
 
+And for cluster install repeat operation for each node in `env/hots_vars`
+Update `env/inventory.ini`, change `dev_cluster`variable.
+
+At this point, 2 ways:
+
+1. Let variable `hashistack_roles_auto_assign == true` and and the role will calculate for you and with the value of variable `hashistack_server_fault_tolerance: 1` ([Read this article for more informations](https://www.hashicorp.com/blog/resilient-infrastructure-with-nomad-fault-tolerance-outage-recovery)) the role distribution. Example: for 6 hosts in group, 3 will be assign as `server` and 3 to `client`.
+
+2. Or if you need a specific roles distribution, continue to read this README.
+
+&nbsp;
+
+And for each node of cluster, you can defined role. Example: `hashistack_node_role: "server"` or `hashistack_node_role: "client"`
+
+Instead of `hashistack_node_role` variable, you can choose for each component, a specific role. Example:
+```
+consul_node_role: server
+nomad_node_role: server
+vault_node_role: server
+```
+
+or
+
+```
+consul_node_role: client
+nomad_node_role: client
+vault_node_role: none # vault doesn't have 'client' role mode
+```
+
+&nbsp;
+
+### Optional:
+You can, if you want, disable TLS and/or ACL configuration with these variables (default: true):
+```
+hashistack_acl: false
+hashistack_tls: false
+```
+
+
+But it's **stronly discouraged** for production.
+
 &nbsp;
 
 Now go to the `playbook` folder, you will find a beautiful and complex playbook: `hashistack.yml`, edit it and change:
@@ -131,12 +187,20 @@ Now go to the `playbook` folder, you will find a beautiful and complex playbook:
 
 with the name of your target you will have in the `env/inventory.ini` file.
 
+Same operations for cluster.
+
 &nbsp;
 
 From your terminal, go to hashistack folder, (start your engine!) and run:
 
 ```sh
-ansible-playbook playbook/hashistack.yml
+ansible-playbook playbook/hashistack_single_mode.yml
+```
+
+or
+
+```sh
+ansible-playbook playbook/hashistack_cluster.yml
 ```
 
 Take of coffee and enjoy `Hashistack Install` show in the terminal!
@@ -309,6 +373,7 @@ Pour tout fonctionne Ansible va:
 * Installer Vault avec le support des ACL/TLS
 * Installer Nomad avec le support des ACL/TLS
 * Configurer le parefeu en ouvrant les ports 22,80,443
+* Configurer le parefeu en ouvrant les port pour le mode cluster
 * Citer un Grand Philisophe contemporain! Chuck Norris!
 
 &nbsp;
@@ -366,6 +431,8 @@ Maintenant dans le répertoire `env/host_vars`. Vous allez voir un répertoire n
 Mettez à jour `$IP`, `$USER`, `Port` dans `all.yml` avec le compte unix SSH configuré sur l'hôte cible.
 Mettez à jour dans `env/inventory.ini`, changez `hosttarget`par le nom du répertoire dans `env/host_vars` que vous avez changé précédement.
 
+Même opération pour le mode cluster. En configurant chaque node dans `env/host_vars` .
+
 &nbsp;
 
 Maintenant dans le répertoire `playbook`, vous trouverez un beau et complexe playbook: `hashistack.yml`, éditez le en changeant:
@@ -376,12 +443,56 @@ Maintenant dans le répertoire `playbook`, vous trouverez un beau et complexe pl
 
 avec le nom que vous avez configuré dans `env/inventory.ini`.
 
+Aussi pour le mode cluster en modifiant le nom du group `dev_cluster`.
+
+A cette étape, 2 possibilités:
+
+1. Laisser la variable `hashistack_roles_auto_assign == true` et le role calculera pour vous avec la valeur de la variable `hashistack_server_fault_tolerance: 1` ([Lire cet article pour plus d'infos (EN)](https://www.hashicorp.com/blog/resilient-infrastructure-with-nomad-fault-tolerance-outage-recovery)) l'attribution des rôles. Exemple: Pour 6 hosts dans le groupe, 3 seront assignés comme `server` et 3 comme `client`.
+
+2. Ou si vous avez des besoins spécifiques pour l'assignation des rôles, continuez à lire ce README.
+
+&nbsp;
+
+Pour chaque nodes du cluster, vous devez désigner un rôle. Exemple: `hashistack_node_role: "server"` ou `hashistack_node_role: "client"`
+
+A la place de la variable `hashistack_node_role`, vous pouvez choisir pour chaque composants un rôle. Exemple:
+```
+consul_node_role: server
+nomad_node_role: server
+vault_node_role: server
+```
+
+ou
+
+```
+consul_node_role: client
+nomad_node_role: client
+vault_node_role: none # vault n'a pas de mode 'client'
+```
+&nbsp;
+
+### Optional:
+Vous pouvez si vous le souhaitez, désactiver la configuration du TLS et/ou des ACL avec ces variables (Par défaut: **true**)
+```
+hashistack_acl: false
+hashistack_tls: false
+```
+
+
+Mais c'est ***fortement déconseillé*** dans une production.
+
 &nbsp;
 
 Ca sent bon! On va pouvoir démarrer le moteur! Dans le terminal, allez dans le répertoire `hashistack` et lancez:
 
 ```sh
-ansible-playbook playbook/hashistack.yml
+ansible-playbook playbook/hashistack_single_mode.yml
+```
+
+ou
+
+```sh
+ansible-playbook playbook/hashistack_cluster.yml
 ```
 
 Prenez vous un petit café ou une bière (à consommer avec modération) et appréciez le spectacle dans le terminal!

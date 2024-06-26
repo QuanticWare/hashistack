@@ -2,7 +2,7 @@
 # defaults file for operate
 
 # General
-nomad_http_scheme: "https"
+nomad_http_scheme: "{% if nomad_tls == true %}https{% else %}http{% endif %}"
 nomad_http_ip: "127.0.0.1"
 nomad_http_port: 4646
 nomad_job_files_dir: "/var/tmp/hashistack/nomad"

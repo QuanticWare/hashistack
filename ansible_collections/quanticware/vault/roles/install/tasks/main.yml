@@ -2,44 +2,39 @@
 #tasks file for install
 
 - name: "Vault | Commons tasks"
-  ansible.builtin.include_tasks: "commons_tasks.yml"
+  ansible.builtin.include_tasks: "01_commons_tasks.yml"
 
-- name: Vault | TLS Configuration
-  ansible.builtin.import_role:
-    name: quanticware.certificate.create
-    tasks_from: client
-  vars:
-    host_certificate_dir: "{{ vault_install_tls_host_certificate_dir }}"
-    ca_host_dir: "{{ vault_install_tls_ca_host_dir }}"
-    ca_pubkey: "{{ vault_install_tls_ca_pubkey }}"
-    ca_privatekey: "{{ vault_install_tls_ca_privatekey }}"
-    ca_provider: "{{ vault_install_tls_ca_provider }}"
-    ca_host: "{{ vault_install_tls_ca_host }}"
-    cert: "{{ vault_install_tls_cert }}"
-    client_privatekey: "{{ vault_install_tls_privatekey }}"
-    common_name: "{{ vault_install_tls_common_name }}"
-    subject_alt_name: "{{ vault_install_tls_subject_alt_name }}"
-  when: cert_tls_present.stat.exists == false or
-        (cert_tls_present.stat.exists == true and tls_check.valid_at.delay == false)
+- name: "Consul | Generate CA Cert"
+  ansible.builtin.include_tasks: "02_ca_cert.yml"
+  when:
+  - vault_tls == true
+  - cert_ca_tls_priv_present.stat.exists == false
 
-- name: "Vault | Consul ACL creation"
-  ansible.builtin.include_tasks: "consul_acl.yml"
+- name: "Consul | TLS certs configuration"
+  ansible.builtin.include_tasks: "03_tls_certs.yml"
+  when:
+  - vault_tls == true
+  - cert_tls_present.stat.exists == false or (cert_tls_present.stat.exists == true and tls_check.valid_at.delay == false)
+
+- name: "Vault | Consul ACL"
+  ansible.builtin.include_tasks: "04_consul_acl.yml"
+  when: vault_acl == true
 
 - name: "Vault | Install"
-  ansible.builtin.include_tasks: "install.yml"
+  ansible.builtin.include_tasks: "05_install.yml"
 
 - name: "Vault | Configuration"
-  ansible.builtin.include_tasks: "configuration.yml"
+  ansible.builtin.include_tasks: "06_configuration.yml"
 
-- name: "Vault | Unseal"
-  ansible.builtin.import_role:
-    name: "quanticware.vault.operate"
-    tasks_from: unseal
+- name: "Vault | Firewall Configuration"
+  ansible.builtin.include_tasks: "07_firewall.yml"
+  when: vault_install_firewall == true
 
 - name: "Vault | Create KV"
   ansible.builtin.import_role:
     name: quanticware.vault.operate
-    tasks_from: create_kv
+    tasks_from: kv_engine_create
+  run_once: true
 
 - name: Vault | Install Vault autounseal
   ansible.builtin.import_role:

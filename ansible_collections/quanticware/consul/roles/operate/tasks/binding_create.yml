@@ -1,0 +1,44 @@
+- name: "Consul Binding Rule | Get Binding Rule list"
+  ansible.builtin.uri:
+    url: "{{ consul_http_scheme }}://{{ consul_http_ip }}:{{ consul_http_port }}/v1/acl/binding-rules"
+    ca_path: "{% if consul_tls %}{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_ca_pubkey }}{% endif %}"
+    client_cert: "{% if consul_tls %}{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_cert }}{% endif %}"
+    client_key: "{% if consul_tls %}{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_privatekey }}{% endif %}"
+    method: GET
+    headers:
+      X-Consul-Token: "{% if consul_acl %}{{ consul_global_management_token | default(ansible_local.consul_global_management_token.consul_global_management_token) }}{% endif %}"
+    status_code:
+        - 200
+        - 404
+    return_content: yes
+  register: consul_binding_rule_list_raw
+
+- ansible.builtin.set_fact:
+    consul_binding_rule_list: "{{ consul_binding_rule_list_raw.json | community.general.json_query('[*].BindName') | string }}"
+
+- name: "Consul Binding Rule | Create Binding Rule {{ consul_binding_method }} for consul_binding_type"
+  ansible.builtin.uri:
+    url: "{{ consul_http_scheme }}://{{ consul_http_ip }}:{{ consul_http_port }}/v1/acl/binding-rule"
+    ca_path: "{% if consul_tls %}{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_ca_pubkey }}{% endif %}"
+    client_cert: "{% if consul_tls %}{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_cert }}{% endif %}"
+    client_key: "{% if consul_tls %}{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_privatekey }}{% endif %}"
+    method: PUT
+    headers:
+      X-Consul-Token: "{% if consul_acl %}{{ consul_global_management_token | default(ansible_local.consul_global_management_token.consul_global_management_token) }}{% endif %}"
+    body: |
+        {
+          "Description": "{{ consul_binding_rule_description | default(consul_binding_method) }}",
+          "AuthMethod": "{{ consul_binding_method }}",
+          "BindType": "{{ consul_binding_type }}",
+          "BindName": "{{ consul_binding_name }}",
+          "Selector": '{{ consul_binding_selector }}'
+        }
+    body_format: json
+    status_code:
+        - 200
+  register: consul_new_binding_rule_name
+  when: consul_binding_name not in consul_binding_rule_list
+
+- debug:
+    msg: "{{ consul_binding_method }} for {{ consul_binding_name }} binding already exists"
+  when: consul_binding_name in consul_binding_rule_list

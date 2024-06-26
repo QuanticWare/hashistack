@@ -1,0 +1,76 @@
+- name: Check number of host in play
+  ansible.builtin.debug:
+    msg: "Hashistack will be deployed on {{ (ansible_play_hosts | length) }} host{% if (ansible_play_hosts | length) > 1 %}s{% endif %}"
+  run_once: true
+
+- block:
+  - ansible.builtin.debug:
+      msg: "Server quorum: {{ hashistack_servers_quorum }}"
+    run_once: true
+
+  - ansible.builtin.debug:
+      msg: "Clients available: {{ hashistack_clients_available }}"
+    run_once: true
+
+  - ansible.builtin.set_fact:
+      hashistack_node_role: "server"
+    when: inventory_hostname in groups[hashistack_cluster_name][0:(hashistack_servers_quorum | int )]
+
+  - ansible.builtin.set_fact:
+      hashistack_node_role: "client"
+    when: inventory_hostname in groups[hashistack_cluster_name][(hashistack_servers_quorum | int ):]
+  when:
+  - hashistack_install_mode == 'cluster'
+  - hashistack_roles_auto_assign == true
+
+- name: "Hashisatck | Set ACL mode to nodes"
+  ansible.builtin.set_fact:
+    nomad_acl: "{% if hashistack_acl == true %}true{% else %}false{% endif %}"
+    consul_acl: "{% if hashistack_acl == true %}true{% else %}false{% endif %}"
+    vault_acl: "{% if hashistack_acl == true %}true{% else %}false{% endif %}"
+
+- ansible.builtin.debug:
+    msg: |
+      {{ inventory_hostname }} - Nomad ACL: {{ nomad_acl }}
+      {{ inventory_hostname }} - Consul ACL: {{ consul_acl }}
+      {{ inventory_hostname }} - Vault ACL: {{ vault_acl }}
+
+- name: "Hashisatck | Set TLS mode to nodes"
+  ansible.builtin.set_fact:
+    nomad_tls: "{% if hashistack_tls == true %}true{% else %}false{% endif %}"
+    consul_tls: "{% if hashistack_tls == true %}true{% else %}false{% endif %}"
+    vault_tls: "{% if hashistack_tls == true %}true{% else %}false{% endif %}"
+
+- ansible.builtin.debug:
+    msg: |
+      {{ inventory_hostname }} - Nomad TLS: {{ nomad_tls }}
+      {{ inventory_hostname }} - Consul TLS: {{ consul_tls }}
+      {{ inventory_hostname }} - Vault TLS: {{ vault_tls }}
+
+- name: "Hashisatck | Set role to nodes"
+  ansible.builtin.set_fact:
+    nomad_node_role: "{{ hashistack_node_role }}"
+    consul_node_role: "{{ hashistack_node_role }}"
+    vault_node_role: "{% if hashistack_node_role == 'server' %}server{% else %}none{% endif %}"
+  when:
+  - hashistack_install_mode == 'cluster'
+  - hashistack_node_role is defined
+
+- name: "Hashisatck | Set role to node"
+  ansible.builtin.set_fact:
+    nomad_node_role: "both"
+    consul_node_role: "both"
+    vault_node_role: "server"
+  when: hashistack_install_mode == 'single'
+
+- ansible.builtin.debug:
+    msg: |
+      {{ inventory_hostname }} - Nomad role: {{ nomad_node_role }}
+      {{ inventory_hostname }} - Consul role: {{ consul_node_role }}
+      {{ inventory_hostname }} - Vault role: {{ vault_node_role }}
+  when: hashistack_install_mode == 'cluster'
+
+- name: "Hashistack | Commons tasks | Set-Timezone"
+  community.general.timezone:
+    name: "{{ hashistack_timezone }}"
+    hwclock: local

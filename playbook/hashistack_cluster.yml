@@ -1,0 +1,14 @@
+- name: Hashistack Installation Cluster
+  hosts: dev_cluster
+  become: yes
+  any_errors_fatal: true
+  tasks:
+  - name: Install Hashistack
+    ansible.builtin.import_role:
+      name: quanticware.hashistack.install
+    vars:
+      hero_name: Mamadoo
+      hero_lang: fr
+      ssh_port: 22
+      hashistack_firewall: true
+      hashistack_cluster_name: "dev_cluster"

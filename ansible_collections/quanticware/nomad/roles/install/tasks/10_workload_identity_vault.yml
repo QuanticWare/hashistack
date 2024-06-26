@@ -1,0 +1,50 @@
+- name: "Nomad | Vault | Enable Auth Method {{ vault_auth_method_path }}"
+  ansible.builtin.import_role:
+    name: "quanticware.vault.operate"
+    tasks_from: auth_enable
+  vars:
+    vault_auth_method_path: "{{ nomad_install_vault_auth_method_path }}"
+    vault_auth_method_type: "{{ nomad_install_vault_auth_method_type }}"
+
+- name: "Nomad | Vault | Transform to one line CA pem"
+  ansible.builtin.shell: "cat {{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_ca_pubkey }} | sed ':a;N;$!ba;s/\\n/\\n/g'"
+  register: ca_certificate_output
+  when: nomad_tls == true
+
+- name: "Nomad | Vault | Configure Auth method"
+  ansible.builtin.import_role:
+    name: "quanticware.vault.operate"
+    tasks_from: kv_secret_write
+  vars:
+    vault_secret_path: "auth/{{ nomad_install_vault_auth_method_path }}/config"
+    vault_secret: '{{ nomad_install_vault_secret_jwt_auth_config }}'
+
+- name: "Nomad | Vault | Configure ACL role"
+  ansible.builtin.import_role:
+    name: "quanticware.vault.operate"
+    tasks_from: kv_secret_write
+  vars:
+    vault_secret_path: "auth/{{ nomad_install_vault_auth_method_path }}/role/{{ nomad_install_vault_jwt_name }}"
+    vault_secret: '{{ nomad_install_vault_role }}'
+
+- name: "Nomad | Vault | Retreive Auth Accessor ID"
+  ansible.builtin.import_role:
+    name: "quanticware.vault.operate"
+    tasks_from: auth_accessor
+  vars:
+    auth_method_path: "{{ nomad_install_vault_auth_method_path }}"
+
+- name: "Nomad | Vault | Write Policy"
+  ansible.builtin.import_role:
+    name: "quanticware.vault.operate"
+    tasks_from: policy_create
+  vars:
+    vault_policy_name: "{{ nomad_install_vault_jwt_name }}"
+    vault_policy_rules: '{{ nomad_install_vault_policy }}'
+
+- name: "Nomad | Vault | Create KV {{ nomad_install_vault_secret_engine_kv }}/"
+  ansible.builtin.import_role:
+    name: "quanticware.vault.operate"
+    tasks_from: kv_engine_create
+  vars:
+    vault_kv_name: "{{ nomad_install_vault_secret_engine_kv }}"

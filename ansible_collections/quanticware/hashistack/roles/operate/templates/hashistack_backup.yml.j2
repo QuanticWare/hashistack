@@ -26,7 +26,7 @@
       environment:
         CONSUL_HTTP_ADDR: "{{ consul_http_ip }}:{{ consul_http_port }}"
         CONSUL_HTTP_SSL: true
-        CONSUL_HTTP_TOKEN: "{% raw %}{{ ansible_local.consul_acl_master_token.consul_acl_master_token }}{% endraw %}"
+        CONSUL_HTTP_TOKEN: "{% raw %}{{ ansible_local.consul_global_management_token.consul_global_management_token }}{% endraw %}"
         CONSUL_CACERT: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_ca_pubkey }}"
         CONSUL_CLIENT_CERT: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_cert }}"
         CONSUL_CLIENT_KEY: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_privatekey }}"
@@ -53,7 +53,7 @@
       environment:
         CONSUL_HTTP_ADDR: "{{ vault_consul_backend_http_ip }}:{{ vault_consul_backend_http_port }}"
         CONSUL_HTTP_SSL: true
-        CONSUL_HTTP_TOKEN: "{% raw %}{{ ansible_local.consul_acl_master_token.consul_acl_master_token }}{% endraw %}"
+        CONSUL_HTTP_TOKEN: "{% raw %}{{ ansible_local.consul_global_management_token.consul_global_management_token }}{% endraw %}"
         CONSUL_CACERT: "{{ consul_operate_tls_host_certificate_dir }}/{{ vault_consul_backend_tls_ca_pubkey }}"
         CONSUL_CLIENT_CERT: "{{ consul_operate_tls_host_certificate_dir }}/{{ vault_consul_backend_tls_cert }}"
         CONSUL_CLIENT_KEY: "{{ consul_operate_tls_host_certificate_dir }}/{{ vault_consul_backend_tls_privatekey }}"

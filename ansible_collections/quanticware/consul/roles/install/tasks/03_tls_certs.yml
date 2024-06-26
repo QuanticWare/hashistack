@@ -1,0 +1,70 @@
+- name: "Consul | TLS Configuration for servers"
+  ansible.builtin.import_role:
+    name: quanticware.certificate.create
+    tasks_from: client
+  vars:
+    host_certificate_dir: "{{ consul_install_tls_ca_host_dir }}"
+    ca_host_dir: "{{ consul_install_tls_ca_host_dir }}"
+    ca_pubkey: "{{ consul_install_tls_ca_pubkey }}"
+    ca_privatekey: "{{ consul_install_tls_ca_privatekey }}"
+    ca_provider: "{{ consul_install_tls_ca_provider }}"
+    ca_host: "{{ consul_install_tls_ca_host }}"
+    cert: "{{ consul_install_tls_cert_server }}"
+    client_privatekey: "{{ consul_install_tls_privatekey_server }}"
+    common_name: "{{ consul_install_tls_common_name_server }}"
+    subject_alt_name: "{{ consul_install_tls_subject_alt_name_server }}"
+  when: cert_tls_server_present.stat.exists == false or
+        (cert_tls_server_present.stat.exists == true and tls_check_server.valid_at.delay == false)
+  become: false
+  delegate_to: localhost
+  run_once: true
+
+- name: "Nomad | TLS Configuration for Clients"
+  ansible.builtin.import_role:
+    name: quanticware.certificate.create
+    tasks_from: client
+  vars:
+    host_certificate_dir: "{{ consul_install_tls_ca_host_dir }}"
+    ca_host_dir: "{{ consul_install_tls_ca_host_dir }}"
+    ca_pubkey: "{{ consul_install_tls_ca_pubkey }}"
+    ca_privatekey: "{{ consul_install_tls_ca_privatekey }}"
+    ca_provider: "{{ consul_install_tls_ca_provider }}"
+    ca_host: "{{ consul_install_tls_ca_host }}"
+    cert: "{{ consul_install_tls_cert_client }}"
+    client_privatekey: "{{ consul_install_tls_privatekey_client }}"
+    common_name: "{{ consul_install_tls_common_name_client }}"
+    subject_alt_name: "{{ consul_install_tls_subject_alt_name_client }}"
+  when:
+  - consul_install_mode == 'cluster'
+  - ( groups[consul_deploy_cluster_name] | map('extract', hostvars) | selectattr('consul_node_role', 'equalto', 'client') | map(attribute='inventory_hostname') | length ) >= 1
+  - (( groups[consul_deploy_cluster_name] | map('extract', hostvars) | selectattr('consul_node_role', 'equalto', 'client') | map(attribute='cert_tls_client_present.stat.exists') | list | first ) == false ) or
+    (( groups[consul_deploy_cluster_name] | map('extract', hostvars) | selectattr('consul_node_role', 'equalto', 'client') | map(attribute='cert_tls_client_present.stat.exists') | list | first ) == true and (groups[consul_deploy_cluster_name] | map('extract', hostvars) | selectattr('consul_node_role', 'equalto', 'client') | map(attribute='tls_check_client.valid_at.delay') | list | first ) == false )
+  become: false
+  delegate_to: localhost
+  run_once: true
+
+- block:
+    - name: "Consul | Copy {{ consul_install_tls_cert_server }} on nodes"
+      ansible.builtin.copy:
+        src: "{{ consul_install_tls_ca_host_dir }}/{{ consul_install_tls_cert_server }}"
+        dest: "{{ consul_install_tls_host_certificate_dir }}/{{ consul_install_tls_cert_server }}"
+      when: consul_node_role == 'server' or consul_node_role == 'both'
+
+    - name: "Consul | Copy {{ consul_install_tls_privatekey_server }} on nodes"
+      ansible.builtin.copy:
+        src: "{{ consul_install_tls_ca_host_dir }}/{{ consul_install_tls_privatekey_server }}"
+        dest: "{{ consul_install_tls_host_certificate_dir }}/{{ consul_install_tls_privatekey_server }}"
+  when: consul_node_role == 'server' or consul_node_role == 'both'
+
+- block:
+    - name: "Consul | Copy {{ consul_install_tls_cert_client }} on nodes"
+      ansible.builtin.copy:
+        src: "{{ consul_install_tls_ca_host_dir }}/{{ consul_install_tls_cert_client }}"
+        dest: "{{ consul_install_tls_host_certificate_dir }}/{{ consul_install_tls_cert_client }}"
+      when: consul_node_role == 'client' or consul_node_role == 'both'
+
+    - name: "Consul | Copy {{ consul_install_tls_privatekey_client }} on nodes"
+      ansible.builtin.copy:
+        src: "{{ consul_install_tls_ca_host_dir }}/{{ consul_install_tls_privatekey_client }}"
+        dest: "{{ consul_install_tls_host_certificate_dir }}/{{ consul_install_tls_privatekey_client }}"
+  when: consul_node_role == 'client'

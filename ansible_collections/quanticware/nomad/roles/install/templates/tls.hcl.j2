@@ -1,0 +1,28 @@
+
+{% if nomad_node_role == 'server' or nomad_node_role == 'both' %}
+
+tls {
+    http = {{ nomad_install_tls_http }}
+    rpc = {{ nomad_install_tls_rpc }}
+    ca_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_ca_pubkey }}"
+    cert_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_cert_server }}"
+    key_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_privatekey_server }}"
+    rpc_upgrade_mode = {{ nomad_install_tls_rpc_upgrade_mode }}
+    verify_server_hostname = "{{ nomad_install_tls_verify_server_hostname }}"
+    verify_https_client = "{{ nomad_install_tls_verify_https_client }}"
+}
+
+{% elif nomad_node_role == 'client'  %}
+
+tls {
+    http = {{ nomad_install_tls_http }}
+    rpc = {{ nomad_install_tls_rpc }}
+    ca_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_ca_pubkey }}"
+    cert_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_cert_client }}"
+    key_file = "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_privatekey_client }}"
+    rpc_upgrade_mode = {{ nomad_install_tls_rpc_upgrade_mode }}
+    verify_server_hostname = "{{ nomad_install_tls_verify_server_hostname }}"
+    verify_https_client = "{{ nomad_install_tls_verify_https_client }}"
+}
+
+{% endif %}

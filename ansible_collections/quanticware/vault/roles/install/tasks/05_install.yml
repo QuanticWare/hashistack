@@ -1,0 +1,58 @@
+- name: "Vault Install | Install binary"
+  ansible.builtin.apt:
+    name: vault
+    update_cache: yes
+  when: vault_install_version is not defined
+
+- name: "Vault Install | Create raft directory"
+  ansible.builtin.file:
+    path: "{{ vault_install_storage_dir }}"
+    state: directory
+    mode: '0755'
+    owner: "vault"
+    group: "vault"
+
+- name: "Vault Install | Install binary"
+  ansible.builtin.apt:
+    name: "vault={{ vault_install_version }}-1"
+    update_cache: yes
+  when: vault_install_version is defined
+
+- name: "Vault Install | Prevent Vault from being upgraded"
+  ansible.builtin.dpkg_selections:
+    name: vault
+    selection: hold
+
+- name: "Vault Install | Copy config file"
+  ansible.builtin.template:
+    src: "vault.hcl.j2"
+    dest: "{{ vault_conf_dir }}/vault.hcl"
+    owner: vault
+    group: vault
+    mode: '0644'
+
+- name: "Vault Install | Create Vault logs directory"
+  ansible.builtin.file:
+    path: "/var/log/vault"
+    state: directory
+    mode: '0755'
+    owner: "vault"
+    group: "vault"
+
+- name: "Vault Install | Add consul.service wait to the systemd unit file"
+  ansible.builtin.lineinfile:
+    path: /lib/systemd/system/vault.service
+    regexp: "^After=network-online.target"
+    line: "After=consul.service"
+
+- name: "Vault Install | Start Vault"
+  ansible.builtin.systemd_service:
+    state: restarted
+    name: vault
+    enabled: true
+    daemon_reload: true
+
+- name: "Vault Install | Wait for Vault restarted"
+  ansible.builtin.wait_for:
+    host: "{{ vault_install_http_ip }}"
+    port: "{{ vault_install_http_port }}"

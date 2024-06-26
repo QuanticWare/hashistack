@@ -1,0 +1,28 @@
+---
+- name: Vault token | Create Nomad token (secure)
+  ansible.builtin.uri:
+    url: "{{ vault_http_scheme }}://{{ vault_http_ip }}:{{ vault_http_port }}/v1/auth/token/create"
+    ca_path: "{% if vault_tls %}{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_ca_pubkey }}{% endif %}"
+    client_cert: "{% if vault_tls %}{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_cert }}{% endif %}"
+    client_key: "{% if vault_tls %}{{ vault_operate_tls_host_certificate_dir }}/{{ vault_operate_tls_privatekey }}{% endif %}"
+    method: POST
+    headers:
+        X-Vault-Token: "{{ vault_init_result.json.root_token | default(vault_root_token) }}"
+    body: |
+        {
+          "policies": {{ vault_policies | to_json }},
+          "no_parent": "true",
+          "renewable": "true",
+          "period": "{{ token_ttl }}"
+        }
+    body_format: json
+    status_code:
+        - 200
+        - 204
+  register: vault_new_token_result_secure
+
+- ansible.builtin.set_fact:
+    vault_new_token_result: "{{ vault_new_token_result_secure | default(vault_new_token_result_unsecure) }}"
+
+- ansible.builtin.debug:
+    msg: "{{ vault_new_token_result.json.auth.client_token }}"

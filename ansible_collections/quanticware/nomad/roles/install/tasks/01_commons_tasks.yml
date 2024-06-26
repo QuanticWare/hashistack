@@ -1,0 +1,109 @@
+- name: "Nomad | Commons tasks | Create ansible facts directory"
+  ansible.builtin.file:
+    path: "/etc/ansible/facts.d"
+    state: directory
+    mode: '0700'
+    owner: "root"
+    group: "root"
+
+- name: "Nomad | Commons tasks | Create TLS directory"
+  ansible.builtin.file:
+    path: "/etc/ssl/hashistack"
+    state: directory
+    mode: '0755'
+    owner: "root"
+    group: "root"
+  when: nomad_tls == true
+
+- name: "Nomad | Commons tasks | Install requiered OS packages"
+  ansible.builtin.apt:
+    update_cache: true
+    pkg:
+    - python3-pip
+    - python3-venv
+    - pipx
+    - jq
+
+- name: "Nomad | Commons tasks | Create Nomad job files directory"
+  ansible.builtin.file:
+    path: "{{ nomad_job_files_dir }}"
+    state: directory
+    mode: '0755'
+    owner: "root"
+    group: "root"
+
+- name: "Nomad | Commons tasks | Create venv for Nomad installation"
+  ansible.builtin.pip:
+    name: "{{ item }}"
+    virtualenv: "{{ ansible_venv_on_target_dir }}"
+    virtualenv_command: "/usr/bin/python3 -m venv"
+  loop:
+    - python-debian
+    - python-nomad
+    - passlib
+
+- name: "Nomad | Commons tasks | Set Ansible Python Interpreter for Nomad installation"
+  ansible.builtin.set_fact:
+    ansible_python_interpreter: "{{ ansible_venv_on_target_dir }}/bin/python"
+
+- name: "Consul | Commons tasks | Add Hashicorp Stable APT repository"
+  ansible.builtin.deb822_repository:
+    name: hashicorp
+    types: [deb]
+    uris: "https://apt.releases.hashicorp.com"
+    signed_by: "https://apt.releases.hashicorp.com/gpg"
+    suites: ["{{ ansible_distribution_release|lower }}"]
+    components: [main]
+    state: present
+    enabled: yes
+
+- name: "Nomad | Commons tasks | Update APT Cache"
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: "Nomad | Set role to nodes"
+  ansible.builtin.set_fact:
+    nomad_node_role: "{{ nomad_node_role }}"
+
+- block:
+    - name: "Nomad | Commons tasks | Check if TLS cert exists for Servers"
+      ansible.builtin.stat:
+        path: "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_cert_server }}"
+      register: cert_tls_server_present
+
+    - name: "Nomad | Commons tasks | Get information on generated certificate for Servers"
+      community.crypto.x509_certificate_info:
+        path: "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_cert_server }}"
+        valid_at:
+          delay: "{{ nomad_install_tls_check_delay }}"
+      register: tls_check_server
+      when: cert_tls_server_present.stat.exists == true
+  when:
+  - nomad_tls == true
+  - nomad_node_role == 'server' or nomad_node_role == 'both'
+
+- block:
+    - name: "Nomad | Commons tasks | Check if TLS cert exists for Client"
+      ansible.builtin.stat:
+        path: "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_cert_client }}"
+      register: cert_tls_client_present
+
+    - name: "Nomad | Commons tasks | Get information on generated certificate for Clients"
+      community.crypto.x509_certificate_info:
+        path: "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_cert_client }}"
+        valid_at:
+          delay: "{{ nomad_install_tls_check_delay }}"
+      register: tls_check_client
+      when: cert_tls_client_present.stat.exists == true
+  when:
+  - nomad_tls == true
+  - nomad_node_role == 'client'
+
+- name: "Nomad | Commons tasks | Check if TLS CA exists"
+  ansible.builtin.stat:
+    path: "{{ hashistack_install_tls_ca_host_dir }}/{{ hashistack_install_tls_ca_privatekey }}"
+  register: cert_ca_tls_priv_present
+  become: false
+  run_once: true
+  delegate_to: localhost
+  when: nomad_tls == true

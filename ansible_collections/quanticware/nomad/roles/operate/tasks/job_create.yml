@@ -1,0 +1,15 @@
+---
+- name: Nomad operate | Register job in ansible pipeline
+  ansible.builtin.slurp:
+    src: "{{ nomad_job_file }}"
+  register: job_payload
+
+- name: Nomad operate | Submit Job (secure)
+  community.general.nomad_job:
+    host: localhost
+    state: present
+    content: "{{ job_payload['content'] | b64decode }}"
+    namespace: "{% if nomad_namespace is defined %}{{ nomad_namespace }}{% endif %}"
+    token: "{% if nomad_acl %}{{ nomad_management_token }}{% endif %}"
+    use_ssl: "{% if nomad_tls == true %}true{% else %}false{% endif %}"
+    validate_certs: false

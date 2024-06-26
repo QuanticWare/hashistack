@@ -32,7 +32,7 @@ For create policy
     - name: "Create Consul policy"
       ansible.builtin.import_role:
         name: "quanticware.consul.operate"
-        tasks_from: create_policy
+        tasks_from: policy_create
       vars:
         consul_token_name: "example-service"
         consul_policy_name: "example-service"
@@ -49,7 +49,7 @@ For create token
     - name: "Create Consul token"
       ansible.builtin.import_role:
         name: "quanticware.consul.operate"
-        tasks_from: create_token
+        tasks_from: token_create
       vars:
         consul_token_name: "example-service"
         consul_policy_name: "example-service"

@@ -16,7 +16,7 @@
       ansible.builtin.shell: nomad node eligibility -enable -self
       environment:
         NOMAD_ADDR: "{{ nomad_install_http_scheme }}://{{ nomad_install_http_ip }}:{{ nomad_install_http_port }}"
-        NOMAD_TOKEN: "{% raw %}{{ ansible_local.nomad_management_token.nomad_management_token }}{% endraw %}"
-        NOMAD_CACERT: "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_ca_pubkey }}"
-        NOMAD_CLIENT_CERT: "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_cert }}"
-        NOMAD_CLIENT_KEY: "{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_privatekey }}"
+        NOMAD_TOKEN: "{% if nomad_acl %}{% raw %}{{ ansible_local.nomad_autoeligibility_token.nomad_autoeligibility_token }}{% endraw %}{% endif %}"
+        NOMAD_CACERT: "{% if nomad_tls %}{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_ca_pubkey }}{% endif %}"
+        NOMAD_CLIENT_CERT: "{% if nomad_tls %}{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_cert }}{% endif %}"
+        NOMAD_CLIENT_KEY: "{% if nomad_tls %}{{ nomad_install_tls_host_certificate_dir }}/{{ nomad_install_tls_privatekey }}{% endif %}"

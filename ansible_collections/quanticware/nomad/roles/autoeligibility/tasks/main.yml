@@ -1,6 +1,48 @@
 ---
 # tasks file for backup
 
+- name: "Nomad | Nomad ACL | Create Nomad policy for single mode install operations (drain)"
+  ansible.builtin.import_role:
+    name: "quanticware.nomad.operate"
+    tasks_from: policy_create
+  vars:
+    nomad_policy_name: "nomad-policy-autoeligibility"
+    nomad_policy_description: "Nomad policy for single mode install operations (drain)"
+    nomad_policy_rules: 'node {\n  policy = \"write\"\n}\n\nagent {\n  policy = \"write\"\n}'
+
+- name: "Nomad | Nomad Token | Create Nomad token for single mode install operations (drain)"
+  ansible.builtin.import_role:
+    name: "quanticware.nomad.operate"
+    tasks_from: token_create
+  vars:
+    nomad_token_name: "autoeligibility"
+    nomad_token_type: "client"
+    nomad_policy_name: "nomad-policy-autoeligibility"
+    nomad_token_global: "false"
+
+- ansible.builtin.set_fact:
+    nomad_autoeligibility_token_facts: |
+      {
+        "nomad_autoeligibility_token": "{{ nomad_new_token_name.json.SecretID | default(nomad_autoeligibility_token) }}"
+      }
+    nomad_autoeligibility_token: "{{ nomad_new_token_name.json.SecretID | default(nomad_autoeligibility_token) }}"
+
+- name: "Nomad ACL | Insert single mode install operations token in ansible local facts"
+  ansible.builtin.copy:
+    dest: /etc/ansible/facts.d/nomad_autoeligibility_token.fact
+    content: "{{ nomad_autoeligibility_token_facts | to_nice_json }}"
+    mode: "0600"
+
+- name: "Nomad ACL | Insert single mode install operations token in hashistack vars"
+  ansible.builtin.blockinfile:
+    path: "{{ hashistack_creds_file }}"
+    marker: "#<!-- {mark} NOMAD AUTOELIGIBILITY TOKEN ANSIBLE MANAGED BLOCK -->"
+    block: |
+      nomad_autoeligibility_token: "{{ nomad_autoeligibility_token }}"
+    create: yes
+  delegate_to: localhost
+  become: no
+
 - name: "Nomad Auto Eligibility | Install pip module"
   ansible.builtin.pip:
     name: "{{ item }}"
@@ -14,8 +56,8 @@
     mode: "0644"
 
 - name: "Nomad Auto Eligibility | Copy service systemd file"
-  copy:
-    src: nomad-autoeligibility.service
+  ansible.builtin.template:
+    src: nomad-autoeligibility.service.j2
     dest: /lib/systemd/system/nomad-autoeligibility.service
     owner: root
     group: root
@@ -28,7 +70,7 @@
     line: "Wants=nomad-autoeligibility.service"
 
 - name: "Nomad Auto Eligibility | Register systemd service"
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     name: nomad-autoeligibility.service
     enabled: true
     daemon_reload: true

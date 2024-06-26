@@ -15,9 +15,9 @@ write: Write secret from ansible dict vault_secret variable
 
 unseal: Unseal Vault with keys found in variable: vault_keys_base64 (on ansible controller or on host locals facts)
 
-nomad_token_create: Create a new token and if needed add to Nomad
+token_create_nomad: Create a new token and if needed add to Nomad
 
-create_kv: Create Key/Value Engine
+kv_engine_create: Create Key/Value Engine
 
 # Requirements
 
@@ -94,7 +94,7 @@ And some almost mandatory:
     - name: Import Vault Operate
       ansible.builtin.import_role:
         name: quanticware.vault.operate
-        tasks_from: create_kv
+        tasks_from: kv_engine_create
       vars:
         vault_kv_name: example
 ```

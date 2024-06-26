@@ -1,0 +1,4 @@
+- name: "Consul Install | service.consul DNS Resolution"
+  ansible.builtin.include_role:
+    name: quanticware.consul.operate
+    tasks_from: dns_resolution

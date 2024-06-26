@@ -1,0 +1,14 @@
+[Unit]
+Description=Nomad auto Eligibility node service
+After=nomad.service
+
+[Service]
+Type=oneshot
+Restart=on-failure
+# ExecStartPre=/bin/bash -c "/usr/bin/sleep 20"
+ExecStart={{ ansible_venv_on_target_dir }}/bin/ansible-playbook -i localhost, /root/nomad_autoeligibility.yml
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target

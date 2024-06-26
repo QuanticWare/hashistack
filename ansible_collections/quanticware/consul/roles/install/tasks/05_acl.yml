@@ -1,0 +1,43 @@
+- name: "Consul ACL | Create Consul policy"
+  ansible.builtin.include_role:
+    name: "quanticware.consul.operate"
+    tasks_from: policy_create
+  vars:
+    consul_policy_name: agent-service
+    consul_policy_rules: 'service_prefix \"\" {\n \"policy\" = \"write\"\n }\n \n node_prefix \"\" {\n \"policy\" = \"write\"\n }\n \n agent_prefix \"\" {\n \"policy\" = \"write\"\n }\n'
+  run_once: true
+
+- name: "Consul Token |  Create Consul token"
+  ansible.builtin.include_role:
+    name: "quanticware.consul.operate"
+    tasks_from: token_create
+  vars:
+    consul_token_name: "agent"
+    consul_policy_name: "agent-service"
+  run_once: true
+
+- ansible.builtin.set_fact:
+    consul_agent_token: "{{ hostvars[groups[consul_deploy_cluster_name][0]]['consul_agent_token'] }}"
+  when: consul_install_mode == 'cluster'
+
+- name: "Consul Token | Set agent token to default token for fix service deregistering"
+  ansible.builtin.uri:
+    url: "{{ consul_install_http_scheme }}://{{ consul_install_http_ip }}:{{ consul_install_http_port }}/v1/agent/token/agent"
+    ca_path: "{% if consul_tls %}{{ consul_install_tls_host_certificate_dir }}/{{ consul_install_tls_ca_pubkey }}{% endif %}"
+    client_cert: "{% if consul_tls %}{{ consul_install_tls_host_certificate_dir }}/{{ consul_install_tls_cert_server }}{% endif %}"
+    client_key: "{% if consul_tls %}{{ consul_install_tls_host_certificate_dir }}/{{ consul_install_tls_privatekey_server }}{% endif %}"
+    method: PUT
+    headers:
+      X-Consul-Token: "{% if consul_acl %}{{ consul_global_management_token | default(ansible_local.consul_global_management_token.consul_global_management_token) }}{% endif %}"
+    body: |
+        {
+          "Token": "{{ consul_new_token | default(consul_agent_token) }}"
+        }
+    body_format: json
+    status_code:
+        - 200
+  register: consul_acl_agent_status
+  until: consul_acl_agent_status.status | int == 200
+  retries: 20
+  delay: 5
+  when: consul_node_role == 'server' or consul_node_role == 'both'

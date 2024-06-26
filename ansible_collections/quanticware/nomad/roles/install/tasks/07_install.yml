@@ -1,0 +1,40 @@
+- name: "Nomad Install | Install binary"
+  ansible.builtin.apt:
+    name: nomad
+    update_cache: yes
+  when: nomad_install_version is not defined
+
+- name: "Nomad Install | Install binary"
+  ansible.builtin.apt:
+    name: "nomad={{ nomad_install_version }}-1"
+    update_cache: yes
+  when: nomad_install_version is defined
+
+- name: "Nomad Install | Create Nomad logs and data directories"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    group: "{{ nomad_install_group }}"
+    owner: "{{ nomad_install_user }}"
+    mode: '0755'
+  loop:
+  - /var/log/nomad
+  - /opt/nomad
+
+- name: "Nomad Install | Prevent Nomad from being upgraded"
+  ansible.builtin.dpkg_selections:
+    name: nomad
+    selection: hold
+
+- name: "Nomad Install | Change user and group for systemd Nomad"
+  ansible.builtin.lineinfile:
+    path: /lib/systemd/system/nomad.service
+    insertafter: '\[Service\]'
+    line: "{{ item }}"
+  loop:
+  - "{% if nomad_node_role == 'server' %}Group=nomad{% elif nomad_node_role == 'client' or nomad_node_role == 'both' %}Group=root{% endif %}"
+  - "{% if nomad_node_role == 'server' %}User=nomad{% elif nomad_node_role == 'client' or nomad_node_role == 'both'%}User=root{% endif %}"
+
+- name: "Nomad | SystemD Daemon Reload"
+  ansible.builtin.systemd_service:
+    daemon_reload: true

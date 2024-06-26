@@ -11,8 +11,8 @@
     chdir: "{{ consul_config_dir }}/backup"
   environment:
     CONSUL_HTTP_ADDR: "{{ consul_http_ip }}:{{ consul_http_port }}"
-    CONSUL_HTTP_SSL: true
-    CONSUL_HTTP_TOKEN: "{{ consul_acl_master_token }}"
-    CONSUL_CACERT: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_ca_pubkey }}"
-    CONSUL_CLIENT_CERT: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_cert }}"
-    CONSUL_CLIENT_KEY: "{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_privatekey }}"
+    CONSUL_HTTP_SSL: "{% if consul_tls == true %}true{% else %}false{% endif %}"
+    CONSUL_HTTP_TOKEN: "{% if consul_acl %}{{ consul_global_management_token }}{% endif %}"
+    CONSUL_CACERT: "{% if consul_tls %}{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_ca_pubkey }}{% endif %}"
+    CONSUL_CLIENT_CERT: "{% if consul_tls %}{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_cert }}{% endif %}"
+    CONSUL_CLIENT_KEY: "{% if consul_tls %}{{ consul_operate_tls_host_certificate_dir }}/{{ consul_operate_tls_privatekey }}{% endif %}"

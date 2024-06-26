@@ -1,44 +1,81 @@
 ---
 # tasks file for install
 
-- name: "Nomad | Commons tasks"
-  ansible.builtin.include_tasks: "commons_tasks.yml"
-
-- name: Nomad | TLS Configuration
-  ansible.builtin.import_role:
-    name: quanticware.certificate.create
-    tasks_from: client
+- name: "Nomad | Install Docker"
+  ansible.builtin.include_role:
+    name: quanticware.docker.install
   vars:
-    host_certificate_dir: "{{ nomad_install_tls_host_certificate_dir }}"
-    ca_host_dir: "{{ nomad_install_tls_ca_host_dir }}"
-    ca_pubkey: "{{ nomad_install_tls_ca_pubkey }}"
-    ca_privatekey: "{{ nomad_install_tls_ca_privatekey }}"
-    ca_provider: "{{ nomad_install_tls_ca_provider }}"
-    ca_host: "{{ nomad_install_tls_ca_host }}"
-    cert: "{{ nomad_install_tls_cert }}"
-    client_privatekey: "{{ nomad_install_tls_privatekey }}"
-    common_name: "{{ nomad_install_tls_common_name }}"
-    subject_alt_name: "{{ nomad_install_tls_subject_alt_name }}"
-  when: cert_tls_present.stat.exists == false or
-        (cert_tls_present.stat.exists == true and tls_check.valid_at.delay == false)
+    docker_private_registry_state: false
+  when:
+  - nomad_node_role == 'client' or nomad_node_role == 'both'
+  - nomad_docker_driver == true
+
+- name: "Nomad | Install CNI"
+  ansible.builtin.include_role:
+    name: quanticware.cni.install
+  when:
+  - nomad_node_role == 'client' or nomad_node_role == 'both'
+  - nomad_docker_driver == true
+
+- name: "Nomad | Install Podman"
+  ansible.builtin.include_role:
+    name: quanticware.podman.install
+  when:
+  - nomad_node_role == 'client' or nomad_node_role == 'both'
+  - nomad_podman_driver == true
+
+- name: "Nomad | Commons tasks"
+  ansible.builtin.include_tasks: "01_commons_tasks.yml"
+
+- name: "Nomad | Generate CA Cert"
+  ansible.builtin.include_tasks: "02_ca_cert.yml"
+  when:
+  - nomad_tls == true
+  - cert_ca_tls_priv_present.stat.exists == false
+
+- name: "Nomad | TLS certs configuration"
+  ansible.builtin.include_tasks: "03_tls_certs.yml"
+  when: nomad_tls == true
 
 - name: "Nomad | Network configuration"
-  ansible.builtin.include_tasks: "network.yml"
+  ansible.builtin.include_tasks: "04_network.yml"
+  when: nomad_install_bridge == true
 
-- name: "Nomad | Consul ACL creation"
-  ansible.builtin.include_tasks: "consul_acl.yml"
+- name: "Nomad | Consul Token"
+  ansible.builtin.include_tasks: "05_consul_acl.yml"
+  when:
+  - nomad_acl == true
+  - nomad_workload_identity_state == false
 
 - name: "Nomad | Vault Configuration"
-  ansible.builtin.include_tasks: "vault.yml"
+  ansible.builtin.include_tasks: "06_vault.yml"
+  when: nomad_workload_identity_state == false
+  run_once: true
 
 - name: "Nomad | Install"
-  ansible.builtin.include_tasks: "install.yml"
+  ansible.builtin.include_tasks: "07_install.yml"
 
 - name: "Nomad | Global Configuration"
-  ansible.builtin.include_tasks: "configuration.yml"
+  ansible.builtin.include_tasks: "08_configuration.yml"
 
-- name: "Nomad | ACL Configuration"
-  ansible.builtin.include_tasks: "acl.yml"
+- name: "Nomad | Workload Identity for Consul"
+  ansible.builtin.include_tasks: "09_workload_identity_consul.yml"
+  run_once: true
+  when:
+  - nomad_acl == true
+  - nomad_workload_identity_state == true
+
+- name: "Nomad | Workload Identity for Vault"
+  ansible.builtin.include_tasks: "10_workload_identity_vault.yml"
+  run_once: true
+  when: nomad_workload_identity_state == true
+
+- name: "Nomad | Change SystemD configuration"
+  ansible.builtin.include_tasks: "11_systemd_tuning.yml"
+
+- name: "Nomad | Firewall configuration"
+  ansible.builtin.include_tasks: "12_firewall.yml"
+  when: nomad_install_firewall == true
 
 - name: "Nomad | Change SystemD configuration"
   ansible.builtin.include_tasks: "systemd_tuning.yml"
@@ -46,3 +83,4 @@
 - name: "Nomad | Install Nomad Auto Eligibility Node"
   ansible.builtin.import_role:
     name: quanticware.nomad.autoeligibility
+  when: nomad_install_mode == 'single'

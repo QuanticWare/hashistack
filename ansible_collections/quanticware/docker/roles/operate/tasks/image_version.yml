@@ -1,3 +1,10 @@
+- name: "Docker Operate | Log into private registry"
+  community.docker.docker_login:
+    registry_url: "{{ registry_url }}"
+    username: "{{ registry_username }}"
+    password: "{{ registry_password }}"
+  when: docker_private_registry_state == true
+
 - name: "Docker Operate | Pull image"
   community.docker.docker_image:
     name: "{{ docker_operate_image }}"
