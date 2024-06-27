@@ -1,0 +1,8 @@
+---
+collections:
+  - ansible.utils
+  - ansible.netcommon
+  - community.general
+  - name: https://github.com/QuanticWare/hashistack-ansible-collections
+    type: git
+    version: main

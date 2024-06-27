@@ -6,10 +6,14 @@ Bonjour :wave:
 
 With minimals `SSH` and `Ansible` Knowledges.
 
-Ansible requiered collections:
-* `ansible-galaxy collection install ansible.netcommon`
-* `ansible-galaxy collection install ansible.utils`
-* `ansible-galaxy collection install community.general`
+```sh
+git clone https://git.quanticware.com/quanticware/hashistack.git
+```
+
+and
+
+Required Ansible collections, please execute the following command from the project's root directory:
+* `ansible-galaxy collection install -r requirements.yml -p ./ansible_collections`
 
 &nbsp;
 
@@ -17,13 +21,8 @@ For Hashistack Cluster installation, create bridge for internals communications.
 
 Refer in Nomad collection, the [Network Tasks](https://git.quanticware.com/quanticware/hashistack/src/branch/main/ansible_collections/quanticware/nomad/roles/install/tasks/04_network.yml) for example.
 
-&nbsp;
 
-```sh
-git clone https://git.quanticware.com/quanticware/hashistack.git
-```
-
-&nbsp;
+and
 
 * Adapt variables `project_dir` in `env/group_vars/all.yml`
 * Update inventory directories for each node

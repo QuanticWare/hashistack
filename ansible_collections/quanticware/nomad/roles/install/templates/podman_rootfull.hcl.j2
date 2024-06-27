@@ -1,8 +1,0 @@
-plugin "nomad-driver-podman" {
-config {
-    socket_path = "{{ nomad_install_podman_socket_path }}"
-    volumes {
-    enabled      = {{ nomad_install_podman_volume_enabled }}
-    }
-  }
-}

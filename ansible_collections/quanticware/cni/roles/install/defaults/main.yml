@@ -1,4 +1,0 @@
----
-# defaults file for cni
-app_name: cni
-role_user: root
