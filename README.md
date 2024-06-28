@@ -12,8 +12,9 @@ git clone https://git.quanticware.com/quanticware/hashistack.git
 
 and
 
-Required Ansible collections, please execute the following command from the project's root directory:
+Required Ansible collections (https://github.com/QuanticWare/hashistack-ansible-collections), please execute the following command from the project's root directory:
 * `ansible-galaxy collection install -r requirements.yml -p ./ansible_collections`
+
 
 &nbsp;
 
